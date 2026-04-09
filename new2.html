@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MR.LEO POS">
+<title>MR.LEO POS - Professional</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Myanmar:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Playfair+Display:wght@800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+:root{
+  --bg:#090b0f;--sf:#12151c;--sf2:#1c212b;--bd:#2a313d;
+  --gold:#d29922;--gold-hover:#e8a926;--gold-sub:rgba(210,153,34,.15);
+  --g:#2ea043;--gs:rgba(46,160,67,.15);
+  --b:#388bfd;--bs:rgba(56,139,253,.15);
+  --r:#f85149;--rs:rgba(248,81,73,.15);
+  --t:#e6edf3;--t2:#8b949e;--t3:#6e7681;
+  --rad:12px;--font:'IBM Plex Sans','Noto Sans Myanmar',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body {height: 100dvh; background: #000; color: var(--t);font-family: var(--font);font-size: 14px;overflow: hidden;}
+#app-container {height: 100dvh;max-width: 480px; margin: 0 auto;background: var(--bg);position: relative;display: flex;flex-direction: column;box-shadow: 0 0 20px rgba(0,0,0,0.8);border-left: 1px solid var(--bd);border-right: 1px solid var(--bd);}
+.hidden{display:none!important}
+.mono{font-family:'IBM Plex Sans',monospace}
+.c-gold{color:var(--gold)}.c-green{color:var(--g)}.c-blue{color:var(--b)}.c-red{color:var(--r)}
+
+#auth{height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at 50% 0%,rgba(210,153,34,.05) 0%,transparent 60%),var(--bg); z-index:999999; position:relative;}
+.abox{width:100%;max-width:400px;background:var(--sf);border:1px solid var(--bd);border-radius:20px;padding:40px 32px;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.f{margin-bottom:14px; flex-shrink:0;}
+.f label{display:block;font-size:12px;color:var(--t2);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.fi{width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:12px 14px;color:var(--t);font-family:var(--font);font-size:14px;outline:none;transition:border-color .15s}
+.fi:focus{border-color:var(--gold)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 18px;border-radius:8px;border:none;cursor:pointer;font-family:var(--font);font-size:14px;font-weight:600;transition:all .15s;white-space:nowrap;flex-shrink:0}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.bp{background:var(--gold);color:#000;width:100%;padding:14px;font-size:15px;font-weight:700;}
+.bp:hover:not(:disabled){background:var(--gold-hover);transform:translateY(-1px)}
+.bsm{padding:8px 14px;font-size:12px}
+.bo{background:transparent;border:1px solid var(--bd);color:var(--t)}
+.bd2{background:var(--rs);color:var(--r);border:1px solid var(--r)}
+.bsu{background:var(--gs);color:var(--g);border:1px solid var(--g)}
+.bbl{background:var(--b);color:#fff;font-weight:600}
+
+#app{display:none;flex-direction:column;height:100%; width: 100%;}
+#app.on{display:flex}
+.hdr{min-height:65px;background:var(--sf);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;padding:10px 14px;gap:12px;flex-shrink:0}
+.hdr-left {display:flex;align-items:center;gap:10px;min-width:0;flex:1;}
+.hdr-title{font-size:15px;font-weight:700;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hdr-sub{font-size:11px;color:var(--t2);margin-top:2px}
+#shop-logo-wrap {width:40px;height:40px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid var(--gold);cursor:pointer;display:flex;align-items:center;justify-content:center;background:var(--sf2)}
+.uchip{display:flex;align-items:center;gap:6px;background:var(--sf2);border:1px solid var(--bd);border-radius:30px;padding:5px 10px 5px 5px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;}
+.uav{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#111;flex-shrink:0}
+
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px;display:flex;flex-direction:column;gap:14px;padding-bottom:20px;}
+.nav{height:64px;background:var(--sf);border-top:1px solid var(--bd);display:flex;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom, 0px)}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:transparent;color:var(--t3);cursor:pointer;font-family:var(--font);font-size:11px;font-weight:600;}
+.nb .ni{font-size:22px;line-height:1;margin-bottom:2px;}
+.nb.on{color:var(--gold)}
+.tab-panel{display:none;flex-direction:column;gap:16px}
+.tab-panel.active{display:flex}
+
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rad);padding:16px;flex-shrink:0}
+.ctitle{font-size:13px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.sg{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;flex-shrink:0}
+.sc{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rad);padding:14px}
+.sv{font-size:20px;font-weight:700;line-height:1.2;font-family:'IBM Plex Sans',monospace}
+.sl{font-size:11px;color:var(--t2);margin-top:4px;text-transform:uppercase;}
+
+#services-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(95px,1fr));gap:8px}
+.svc-btn{background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rad);padding:14px 8px;text-align:center;color:var(--t);display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer}
+.svc-btn:active{transform:scale(.95);background:var(--bd)}
+.svc-emoji{font-size:28px}
+.svc-name{font-size:12px;font-weight:600;line-height:1.3}
+.svc-price{font-size:12px;color:var(--gold);font-family:'IBM Plex Sans',monospace;font-weight:700}
+
+.cart-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(48,54,61,.5);flex-shrink:0}
+.ci-emoji{font-size:22px;flex-shrink:0}
+.ci-info{flex:1;min-width:0}
+.ci-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ci-price{font-size:12px;color:var(--gold);font-family:'IBM Plex Sans',monospace;margin-top:2px}
+.qty-ctrl{display:flex;align-items:center;gap:8px;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:4px;flex-shrink:0}
+.qb{width:28px;height:28px;background:var(--sf);border:1px solid var(--bd);color:var(--t);font-size:18px;display:flex;align-items:center;justify-content:center;border-radius:6px;font-weight:600}
+.qn{font-size:14px;font-weight:700;min-width:20px;text-align:center;font-family:'IBM Plex Sans',monospace}
+.pay-row{display:flex;gap:10px;margin-top:16px;flex-shrink:0}
+.pay-btn{flex:1;padding:14px;border-radius:10px;font-size:14px;font-weight:700;background:var(--sf2);border:2px solid var(--bd);color:var(--t3);}
+.pay-btn.on-c{background:var(--gs);border-color:var(--g);color:var(--g)}
+.pay-btn.on-m{background:rgba(56,139,253,.1);border-color:var(--b);color:var(--b)}
+
+.list-row{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rad);padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.lr-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#111;flex-shrink:0}
+.lr-info{flex:1;min-width:0}
+.lr-title{font-size:15px;font-weight:600}
+.lr-sub{font-size:12px;color:var(--t2);margin-top:4px}
+.lr-right{text-align:right;flex-shrink:0}
+.lr-val{font-size:14px;font-weight:700;font-family:'IBM Plex Sans',monospace;color:var(--gold)}
+
+.mov{display:none;position:absolute;inset:0;background:rgba(0,0,0,.9);z-index:900;align-items:flex-end;justify-content:center;backdrop-filter:blur(3px)}
+.mov.open{display:flex}
+.mo{background:var(--sf);border:1px solid var(--bd);border-radius:20px 20px 0 0;padding:20px 18px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch;animation:slideUp .2s ease-out;display:flex;flex-direction:column;}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.mo-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-shrink:0}
+.mo-title{font-size:18px;font-weight:700}
+.mo-close{background:var(--sf2);border:1px solid var(--bd);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:var(--t);font-size:16px;cursor:pointer;}
+
+.fc{padding:8px 16px;border-radius:30px;border:1px solid var(--bd);background:var(--sf2);color:var(--t2);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.fc.on{background:var(--gold-sub);border-color:var(--gold);color:var(--gold)}
+.fr{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;flex-shrink:0}
+.fr::-webkit-scrollbar{display:none}
+
+.pin-dots{display:flex;gap:14px;justify-content:center;margin:24px 0;flex-shrink:0}
+.pdot{width:16px;height:16px;border-radius:50%;background:var(--bd);transition:all .2s;border:2px solid transparent}
+.pdot.fll{background:var(--gold);box-shadow:0 0 10px var(--gold-sub)}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:300px;margin:0 auto;flex-shrink:0}
+.pk{background:var(--sf2);border:1px solid var(--bd);border-radius:50%;width:70px;height:70px;margin:0 auto;font-size:26px;font-weight:600;color:var(--t);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Sans',monospace;cursor:pointer;}
+.pk:active{background:var(--bd);transform:scale(.92)}
+.pk.del{color:var(--r);font-size:22px;background:transparent;border-color:transparent}
+.pk.ok{background:var(--gold);color:#000;font-size:18px;border-color:var(--gold);font-weight:700}
+
+.empty{text-align:center;padding:40px 10px;color:var(--t3)}
+.empty-ic{font-size:40px;margin-bottom:12px;opacity:0.8}
+.bdg{display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
+.ba{background:var(--gs);color:var(--g)}
+.bp2{background:var(--gold-sub);color:var(--gold)}
+
+#toast{position:fixed;top:30px;left:50%;transform:translateX(-50%);background:var(--sf2);border:1px solid var(--bd);border-radius:12px;padding:12px 20px;font-size:14px;font-weight:600;color:var(--t);opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;z-index:9999;box-shadow:0 10px 30px rgba(0,0,0,.6)}
+#toast.show{opacity:1;top:50px}
+#toast.ok{border-color:var(--g);color:var(--g)}
+#toast.err{border-color:var(--r);color:var(--r)}
+
+.c-swatch{width:34px;height:34px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:transform .1s}
+.c-swatch.sel{border-color:var(--t);box-shadow:0 0 0 2px var(--bd)}
+
+/* PRINT STYLES FOR RECEIPT / VOUCHER */
+@media print {
+  body * { visibility: hidden; }
+  #print-area, #print-area * { visibility: visible; }
+  #print-area { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; }
+  #app-container, .mov { display: none !important; }
+}
+#receipt-content { background: #fff; color: #000; padding: 24px 20px; font-family: 'IBM Plex Sans', monospace; max-width: 350px; margin: 0 auto;}
+.rc-shop { font-size: 20px; font-weight: 800; text-align: center; margin-bottom: 4px; }
+.rc-tag { font-size: 11px; text-align: center; color: #666; letter-spacing: 1px; text-transform: uppercase; }
+.rc-meta { font-size: 11px; text-align: center; color: #888; margin: 12px 0; }
+.rc-div { border-top: 2px dashed #ccc; margin: 12px 0; }
+.rc-line { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; font-weight: 500; }
+
+/* FULL SCREEN LOADER */
+.loader-overlay {position:absolute;inset:0;background:var(--bg);z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--gold);}
+.spinner {width: 40px;height: 40px;border: 4px solid var(--bd);border-top: 4px solid var(--gold);border-radius: 50%;animation: spin 1s linear infinite;margin-bottom: 16px;}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="app-container">
+
+  <div id="loading-state" class="loader-overlay" style="display:none;">
+    <div class="spinner"></div>
+    <div style="font-weight:700;letter-spacing:1px">SYNCING DATABASE...</div>
+    <div style="font-size:12px;color:var(--t2);margin-top:8px" id="loading-text">Downloading full historical data</div>
+  </div>
+
+  <div id="auth">
+    <div class="abox">
+      <div style="text-align:center;margin-bottom:32px">
+        <div style="font-size:48px;margin-bottom:12px">💈</div>
+        <div style="font-size:24px;font-weight:800;color:var(--gold);letter-spacing:2px;margin-bottom:4px;font-family:'Playfair Display',serif">MR.LEO <span style="color:var(--t);font-weight:300;font-family:var(--font)">POS</span></div>
+        <div style="font-size:13px;color:var(--t2);text-transform:uppercase;letter-spacing:1px">Cloud Access</div>
+      </div>
+      <div id="login-err" style="display:none;background:rgba(248,81,73,.15);border:1px solid #f85149;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#f85149;text-align:center"></div>
+      <div class="f"><label>အီးမေးလ် (Email)</label><input class="fi" id="le" type="email" placeholder="owner@shop.com"></div>
+      <div class="f"><label>စကားဝှက် (Password)</label><input class="fi" id="lp" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()"></div>
+      <button class="btn bp" id="lbtn" onclick="login()" style="margin-top:8px">Cloud ဝင်ရောက်မည်</button>
+    </div>
+  </div>
+
+  <div id="app">
+    <header class="hdr">
+      <div class="hdr-left">
+        <div id="shop-logo-wrap" onclick="triggerLogoUpload()">
+          <img id="shop-logo-img" src="" alt="" style="width:100%;height:100%;object-fit:cover;display:none">
+          <span id="shop-logo-placeholder" style="font-size:18px">🏪</span>
+        </div>
+        <input type="file" id="logo-file-input" accept="image/*" style="display:none" onchange="handleLogoUpload(event)">
+        <div style="min-width:0;flex:1">
+          <div class="hdr-title" id="h-title">Shop Name</div>
+          <div class="hdr-sub" id="clock-dt">---</div>
+        </div>
+      </div>
+      <div class="uchip" onclick="openPinOverlay(false)">
+        <div class="uav" id="h-av" style="background:var(--bd)">?</div>
+        <span id="h-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">---</span>
+      </div>
+    </header>
+
+    <div class="content">
+      <div id="tab-pos" class="tab-panel active">
+        <div class="card" style="display:flex;flex-direction:column;padding:14px;min-height:180px">
+          <div class="ctitle">ဝန်ဆောင်မှုများ</div>
+          <div id="services-grid" style="overflow-y:auto;flex:1;padding-bottom:8px"></div>
+        </div>
+        <div class="card" style="padding:14px;display:flex;flex-direction:column;min-height:250px">
+          <div class="ctitle">မှာယူမှု <span class="bdg ba hidden" id="cart-badge">0</span></div>
+          <div id="cart-list" style="overflow-y:auto;flex:1;padding-right:4px"></div>
+          <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bd);flex-shrink:0;position:sticky;bottom:0;background:var(--sf);z-index:10;padding-bottom:4px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <span style="font-weight:700;font-size:15px;text-transform:uppercase;letter-spacing:1px">စုစုပေါင်း</span>
+              <span class="mono c-gold" style="font-size:24px;font-weight:800" id="cart-total">0 Ks</span>
+            </div>
+            <button class="btn bp" id="btn-checkout" onclick="openPayModal()" disabled>ငွေရှင်းမည်</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-sales" class="tab-panel">
+        <div class="fr">
+          <button class="fc on" id="fc-curr" onclick="setSalesView('current')">ယခု လက်ရှိ</button>
+          <button class="fc" id="fc-hist" onclick="setSalesView('history')">မှတ်တမ်းများ</button>
+          <button class="fc" id="fc-rpt" onclick="setSalesView('report')">📊 အစီရင်ခံစာ (Reports)</button>
+        </div>
+
+        <div id="sv-current">
+          <div id="sv-current-empty" class="hidden">
+            <div class="empty">
+              <div class="empty-ic">🔒</div>
+              <div style="font-size:14px;font-weight:600">ယခု လက်ရှိ ဖွင့်ထားသော စာရင်းမရှိပါ</div>
+              <button class="btn bp" style="margin-top:20px;padding:16px" onclick="openSessionGate()">စာရင်းသစ် ဖွင့်မည်</button>
+            </div>
+          </div>
+
+          <div id="sv-current-data">
+            <div class="card" style="border-color:var(--g);background:rgba(46,160,67,.03)">
+              <div class="ctitle" style="margin-bottom:16px">
+                <div>
+                  <span class="c-green" style="font-size:14px;margin-right:8px">🟢 Session ဖွင့်ထားပါသည်</span>
+                  <span class="mono" style="font-size:12px;color:var(--t2)" id="ss-id"></span>
+                </div>
+                <span class="mono" style="font-size:11px;color:var(--t3);font-weight:500" id="ss-time"></span>
+              </div>
+              
+              <div style="background:var(--sf2);border-radius:12px;padding:16px;margin-bottom:16px;border:1px solid var(--bd)">
+                <div style="display:flex;justify-content:space-between;margin-bottom:12px;font-size:14px;border-bottom:1px solid var(--bd);padding-bottom:12px">
+                  <span style="font-weight:600">စုစုပေါင်း အရောင်း</span><span class="mono c-gold" style="font-weight:800;font-size:18px" id="ss-tot">0</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:10px;font-size:13px;color:var(--g);font-weight:500">
+                  <span>💵 ငွေသား အရောင်း</span><span class="mono" id="ss-cash">0</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--b);font-weight:500">
+                  <span>📱 KPay / QR</span><span class="mono" id="ss-mmqr">0</span>
+                </div>
+              </div>
+
+              <div style="background:var(--sf2);border-radius:12px;padding:16px;margin-bottom:16px;border:1px solid var(--bd)">
+                <div style="display:flex;justify-content:space-between;margin-bottom:10px;font-size:13px">
+                  <span>အဖွင့်ငွေ (Opening Cash)</span><span class="mono" id="ss-open">0</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:10px;font-size:13px">
+                  <span class="c-green">+ ငွေသား အရောင်း (Cash Only)</span><span class="mono c-green" id="ss-cash-add">0</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:12px;font-size:13px;border-bottom:1px solid var(--bd);padding-bottom:12px">
+                  <span class="c-red">− အသုံးစရိတ် (Expenses)</span><span class="mono c-red" id="ss-exp">0</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800">
+                  <span class="c-gold">လက်ကျန်ငွေသား (Expected)</span><span class="mono c-gold" style="font-size:18px" id="ss-expect">0</span>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:12px">
+                 <button class="btn bo" style="flex:1;color:var(--r);border-color:var(--rs)" onclick="openExpenseModal()">+ အသုံးစရိတ်</button>
+                 <button class="btn bbl" style="flex:2;font-size:15px" onclick="openCloseSessionModal()">စာရင်းပိတ်မည်</button>
+              </div>
+            </div>
+
+            <div class="card" style="margin-top:16px"><div class="ctitle">ယခု Session မှတ်တမ်းများ</div><div id="ss-txns"></div></div>
+          </div>
+        </div>
+        
+        <div id="sv-history" class="hidden">
+           <div class="card">
+               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                   <div class="ctitle" style="margin-bottom:0">ယခင်ပိတ်ပြီးသော စာရင်းများ</div>
+                   <button class="btn bsu bsm" onclick="exportFullDatabase()">📥 Export Excel Data</button>
+               </div>
+               <div id="hist-sessions"></div>
+           </div>
+        </div>
+
+        <div id="sv-report" class="hidden">
+           <div class="card">
+               <div class="ctitle">ရောင်းရငွေ အစီရင်ခံစာ (Sales Analytics)</div>
+               <div class="fr">
+                   <button class="fc on" id="rpt-btn-mo" onclick="setRptMode('monthly')">လအလိုက် (Monthly)</button>
+                   <button class="fc" id="rpt-btn-yr" onclick="setRptMode('yearly')">နှစ်အလိုက် (Yearly)</button>
+               </div>
+               <input type="month" id="rpt-month-input" class="fi" onchange="renderReport()">
+               <input type="number" id="rpt-year-input" class="fi hidden" placeholder="e.g. 2026" onchange="renderReport()">
+               <button class="btn bsu" style="width:100%;margin-top:16px" onclick="exportReportExcel()">📥 Export Report to Excel</button>
+           </div>
+           <div id="rpt-summary" style="margin-top:14px"></div>
+        </div>
+
+      </div>
+
+      <div id="tab-comm" class="tab-panel">
+        <div class="card">
+          <div class="ctitle">ကော်မရှင် တွက်ချက်မှု</div>
+          <div class="fr">
+            <button class="fc on" data-c="daily" onclick="setCommFilt('daily')">ယနေ့</button>
+            <button class="fc" data-c="weekly" onclick="setCommFilt('weekly')">ယခုအပတ်</button>
+            <button class="fc" data-c="monthly" onclick="setCommFilt('monthly')">ယခုလ</button>
+          </div>
+          <input type="date" id="comm-date" class="fi" style="font-size:15px" onchange="renderComm()">
+        </div>
+        <div class="sg">
+          <div class="sc"><div class="sl">စုစုပေါင်း အရောင်း</div><div class="sv c-gold" id="cs-sales">0 Ks</div></div>
+          <div class="sc"><div class="sl">ပေးရန် ကော်မရှင်</div><div class="sv c-green" id="cs-comm">0 Ks</div></div>
+        </div>
+        <div id="comm-list"></div>
+      </div>
+
+      <div id="tab-admin" class="tab-panel">
+        <div class="fr">
+          <button class="fc on" id="fa-emp" onclick="setAdminView('emp')">👥 ဝန်ထမ်းများ</button>
+          <button class="fc" id="fa-svc" onclick="setAdminView('svc')">✂️ ဝန်ဆောင်မှုများ</button>
+          <button class="fc" id="fa-sec" onclick="setAdminView('sec')">⚙️ ဆိုင် Setting</button>
+        </div>
+
+        <div id="av-emp">
+          <button class="btn bp" style="margin-bottom:16px" onclick="openEmpModal()">+ ဝန်ထမ်းအသစ် ထည့်မည်</button>
+          <div id="admin-emp-list"></div>
+        </div>
+
+        <div id="av-svc" class="hidden">
+          <button class="btn bp" style="margin-bottom:16px" onclick="openSvcModal()">+ ဝန်ဆောင်မှုအသစ်</button>
+          <div id="admin-svc-list"></div>
+        </div>
+        
+        <div id="av-sec" class="hidden">
+          <div class="card" style="border-color:var(--gold-sub);margin-bottom:16px">
+            <div class="ctitle" style="color:var(--gold)">🏪 ဆိုင်လိုဂို ထည့်/ပြောင်းရန်</div>
+            <div style="display:flex;align-items:center;gap:16px">
+              <div id="admin-logo-wrap" style="width:72px;height:72px;border-radius:12px;overflow:hidden;border:2px dashed var(--bd);display:flex;align-items:center;justify-content:center;background:var(--sf2);cursor:pointer" onclick="triggerLogoUpload()">
+                <img id="admin-logo-img" src="" style="width:100%;height:100%;object-fit:cover;display:none">
+                <span id="admin-logo-ph" style="font-size:32px">🏪</span>
+              </div>
+              <div style="flex:1">
+                <button class="btn bsu bsm" onclick="triggerLogoUpload()">📷 ဓာတ်ပုံရွေးမည်</button>
+                <button class="btn bo bsm" style="margin-top:8px;color:var(--r)" onclick="removeLogo()">ဖယ်ရှားမည်</button>
+              </div>
+            </div>
+          </div>
+          
+          <button class="btn bo" style="width:100%;color:var(--r);border-color:var(--rs)" onclick="cloudLogout()">🚪 Cloud အကောင့်မှ ထွက်မည် (Log Out)</button>
+        </div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <button class="nb on" data-t="pos" onclick="switchTab('pos')"><span class="ni">🏠</span>POS</button>
+      <button class="nb admin-only" data-t="sales" onclick="switchTab('sales')" style="display:none"><span class="ni">📊</span>Sales</button>
+      <button class="nb admin-only" data-t="comm" onclick="switchTab('comm')" style="display:none"><span class="ni">💰</span>Comm</button>
+      <button class="nb admin-only" data-t="admin" onclick="switchTab('admin')" style="display:none"><span class="ni">⚙️</span>Admin</button>
+    </nav>
+  </div>
+
+  <div id="app-boot-lock" class="mov" style="z-index:99999;background:var(--bg);align-items:center;backdrop-filter:none">
+    <div class="mo" style="border:none;background:transparent;box-shadow:none;align-self:center">
+      <div style="text-align:center;margin-bottom:30px">
+        <div style="font-size:50px;margin-bottom:16px">🔒</div>
+        <div style="font-size:24px;font-weight:800;color:var(--gold);letter-spacing:2px;margin-bottom:6px">MR.LEO <span style="color:var(--t);font-weight:300">POS</span></div>
+        <div style="font-size:13px;color:var(--t2)">စနစ်ကိုစတင်ရန် Admin PIN ရိုက်ထည့်ပါ</div>
+      </div>
+      <div class="pin-dots" style="margin-bottom:30px"><div class="pdot" id="bl-pd0"></div><div class="pdot" id="bl-pd1"></div><div class="pdot" id="bl-pd2"></div><div class="pdot" id="bl-pd3"></div></div>
+      <div style="text-align:center;color:var(--r);font-size:13px;font-weight:600;height:18px;margin-bottom:16px" id="bl-err"></div>
+      <div class="pad">
+        <button class="pk" onclick="blK('1')">1</button><button class="pk" onclick="blK('2')">2</button><button class="pk" onclick="blK('3')">3</button>
+        <button class="pk" onclick="blK('4')">4</button><button class="pk" onclick="blK('5')">5</button><button class="pk" onclick="blK('6')">6</button>
+        <button class="pk" onclick="blK('7')">7</button><button class="pk" onclick="blK('8')">8</button><button class="pk" onclick="blK('9')">9</button>
+        <button class="pk del" onclick="blDel()">⌫</button><button class="pk" onclick="blK('0')">0</button><button class="pk ok" onclick="blEnter()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="session-gate" class="mov" style="z-index:9999;align-items:center;backdrop-filter:blur(8px)">
+    <div class="mo" style="border-radius:20px;align-self:center;border:1px solid var(--gold-sub)">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:48px;margin-bottom:12px">💈</div>
+        <div style="font-size:24px;font-weight:800;margin-bottom:4px" id="sg-title">ဆိုင်အမည်</div>
+        <div style="font-size:12px;color:var(--t2);letter-spacing:1px;text-transform:uppercase">Powered by MR.LEO</div>
+      </div>
+      <div style="background:var(--gs);border:1px solid var(--g);border-radius:10px;padding:14px;margin-bottom:20px;text-align:center">
+        <div style="font-size:14px;color:var(--g);font-weight:700">စာရင်းဖွင့်ရန် လိုအပ်ပါသည်</div>
+      </div>
+      <div class="f">
+        <label style="text-align:center;font-size:13px">အဖွင့်ငွေ (Opening Cash)</label>
+        <input type="number" id="sg-cash" class="fi mono" style="font-size:24px;text-align:center;padding:16px;border-color:var(--bd)" placeholder="0" value="0">
+      </div>
+      <button class="btn bp" id="btn-open-sess" onclick="openSession()" style="padding:16px;font-size:16px">စာရင်းဖွင့်မည်</button>
+    </div>
+  </div>
+
+  <div id="pin-overlay" class="mov">
+    <div class="mo" style="align-self:center;border:1px solid var(--gold-sub);padding-bottom:24px">
+      <div style="text-align:center;margin-bottom:24px"><div style="font-size:24px;font-weight:800;color:var(--gold);letter-spacing:2px;margin-bottom:4px">MR.LEO <span style="color:var(--t);font-weight:300">POS</span></div><div style="font-size:12px;color:var(--t2)">အကောင့်ဝင်ရန် ရွေးပါ</div></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px" id="pin-users"></div>
+      <div style="text-align:center;font-size:11px;color:var(--t3);margin-bottom:24px">Admin ဝင်ရန် 🔑 ခလုတ်ကို နှိပ်ပါ။</div>
+      <button class="btn bo" style="width:100%;padding:14px" onclick="cls('pin-overlay')">ပိတ်မည်</button>
+    </div>
+  </div>
+
+  <div id="pin-pad-modal" class="mov">
+    <div class="mo" style="align-self:flex-end">
+      <div class="mo-hdr"><div class="mo-title" id="pad-name" style="font-size:20px">---</div><button class="mo-close" onclick="cls('pin-pad-modal');opn('pin-overlay')">✕</button></div>
+      <div class="pin-dots"><div class="pdot" id="pd0"></div><div class="pdot" id="pd1"></div><div class="pdot" id="pd2"></div><div class="pdot" id="pd3"></div></div>
+      <div style="text-align:center;color:var(--r);font-size:13px;font-weight:600;height:18px;margin-bottom:16px" id="pad-err"></div>
+      <div class="pad">
+        <button class="pk" onclick="padK('1')">1</button><button class="pk" onclick="padK('2')">2</button><button class="pk" onclick="padK('3')">3</button>
+        <button class="pk" onclick="padK('4')">4</button><button class="pk" onclick="padK('5')">5</button><button class="pk" onclick="padK('6')">6</button>
+        <button class="pk" onclick="padK('7')">7</button><button class="pk" onclick="padK('8')">8</button><button class="pk" onclick="padK('9')">9</button>
+        <button class="pk del" onclick="padDel()">⌫</button><button class="pk" onclick="padK('0')">0</button><button class="pk ok" onclick="padEnter()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-pay" class="mov">
+    <div class="mo">
+      <div class="mo-hdr"><div class="mo-title">ငွေပေးချေမှု</div><button class="mo-close" onclick="cls('modal-pay')">✕</button></div>
+      <div style="background:var(--sf2);padding:16px;border-radius:12px;margin-bottom:20px;text-align:center;border:1px solid var(--bd)">
+        <div style="font-size:12px;color:var(--t2);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">စုစုပေါင်း</div>
+        <div class="mono c-gold" style="font-size:32px;font-weight:800" id="pay-amt">0</div>
+      </div>
+      <div class="f"><label>ဝန်ထမ်း (ရွေးချယ်ပါ)</label><select id="pay-emp" class="fi" style="font-weight:700;color:var(--b);font-size:15px"></select></div>
+      <div class="f"><label>မှတ်ချက်</label><input type="text" id="pay-note" class="fi" placeholder="(ရွေးချယ်နိုင်)"></div>
+      <div class="f" style="margin-top:20px">
+        <label>ငွေပေးချေမည့် ပုံစံ</label>
+        <div class="pay-row" style="margin-top:8px"><button class="pay-btn on-c" id="pm-cash" onclick="setPM('cash')">💵 ငွေသား</button><button class="pay-btn" id="pm-mmqr" onclick="setPM('mmqr')">📱 KPay/QR</button></div>
+      </div>
+      <button class="btn bp" id="btn-conf-pay" style="margin-top:10px" onclick="completeSale()">ငွေရှင်းမည်</button>
+    </div>
+  </div>
+
+  <div id="modal-rec" class="mov">
+    <div class="mo" style="align-self:center">
+      <div style="text-align:center;padding:24px 10px"><div style="font-size:50px;margin-bottom:16px">✅</div><div style="font-size:22px;font-weight:800;margin-bottom:8px">အရောင်းအောင်မြင်ပါသည်</div><div class="mono c-gold" style="font-size:16px" id="rec-id"></div></div>
+      <div style="display:flex;gap:10px;flex-direction:column">
+        <button class="btn bp" onclick="cls('modal-rec');cart=[];renderCart();switchTab('pos')">အရောင်းအသစ် စမည်</button>
+        <button class="btn bo" onclick="printReceipt()">🖨️ ဘောက်ချာ ထုတ်မည်</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-exp" class="mov">
+    <div class="mo">
+      <div class="mo-hdr"><div class="mo-title">အသုံးစရိတ် ထည့်မည်</div><button class="mo-close" onclick="cls('modal-exp')">✕</button></div>
+      <div class="f"><label>အကြောင်းအရာ</label><input type="text" id="exp-desc" class="fi" placeholder="ဥပမာ - ကော်ဖီဖိုး"></div>
+      <div class="f"><label>ပမာဏ (Ks)</label><input type="number" id="exp-amt" class="fi mono" placeholder="0"></div>
+      <button class="btn bd2" id="btn-sv-exp" style="width:100%;padding:14px;font-size:15px;font-weight:700;margin-top:10px" onclick="saveExp()">ထည့်မည်</button>
+    </div>
+  </div>
+
+  <div id="modal-close-sess" class="mov">
+    <div class="mo" style="align-self:center">
+      <div class="mo-hdr"><div class="mo-title">စာရင်းပိတ်မည်</div><button class="mo-close" onclick="cls('modal-close-sess')">✕</button></div>
+      <div style="background:var(--sf2);padding:16px;border-radius:12px;margin-bottom:20px;border:1px solid var(--bd)"><div style="font-size:13px;color:var(--t2);margin-bottom:6px;font-weight:600">ကောင်တာတွင် ရှိရမည့် ငွေသား</div><div class="mono c-gold" style="font-size:28px;font-weight:800" id="cs-expected">0</div></div>
+      <div class="f" style="margin-bottom:24px"><label>လက်တွေ့ ရေတွက်ရရှိသော ငွေသား</label><input type="number" id="cs-actual" class="fi mono" style="font-size:22px;padding:16px;border-color:var(--gold)" placeholder="0"></div>
+      <button class="btn bp" id="btn-cls-sess" onclick="closeSession()">စာရင်းပိတ် သိမ်းဆည်းမည်</button>
+    </div>
+  </div>
+  
+  <div id="modal-sess-detail" class="mov">
+      <div class="mo">
+          <div class="mo-hdr"><div class="mo-title">စာရင်း အသေးစိတ်</div><button class="mo-close" onclick="cls('modal-sess-detail')">✕</button></div>
+          <div id="sd-content"></div>
+      </div>
+  </div>
+
+  <div id="modal-emp" class="mov">
+    <div class="mo">
+      <div class="mo-hdr"><div class="mo-title" id="me-title">ဝန်ထမ်း ပြင်ဆင်ရန်</div><button class="mo-close" onclick="cls('modal-emp')">✕</button></div>
+      <input type="hidden" id="me-id">
+      <div class="f"><label>အမည်</label><input type="text" id="me-name" class="fi"></div>
+      <div class="f"><label>ရာထူး</label><input type="text" id="me-role" class="fi" value="Barber"></div>
+      <div class="f"><label>PIN (ဂဏန်း ၄ လုံး)</label><input type="number" id="me-pin" class="fi mono" style="font-size:16px;letter-spacing:2px"></div>
+      <div class="f"><label>အရောင်</label><div class="fr" id="me-colors" style="flex-wrap:wrap"></div></div>
+      <div class="f"><label>အခြေအနေ</label><select id="me-status" class="fi"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+      <div style="display:flex;gap:12px;margin-top:24px"><button class="btn bd2" style="width:50px;font-size:18px" onclick="delEmp()">🗑️</button><button class="btn bp" id="btn-sv-emp" style="flex:1" onclick="saveEmp()">သိမ်းဆည်းမည်</button></div>
+    </div>
+  </div>
+
+  <div id="modal-svc" class="mov">
+    <div class="mo">
+      <div class="mo-hdr"><div class="mo-title" id="ms-title">ဝန်ဆောင်မှု ပြင်ဆင်ရန်</div><button class="mo-close" onclick="cls('modal-svc')">✕</button></div>
+      <input type="hidden" id="ms-id">
+      <div style="display:flex;gap:12px">
+        <div class="f" style="width:80px"><label>ပုံ</label><select id="ms-emoji" class="fi" style="padding:12px 6px;font-size:22px"><option>✂️</option><option>💈</option><option>🚿</option><option>🎨</option><option>🌿</option><option>🟤</option><option>🌈</option><option>🧼</option><option>💆</option><option>💧</option><option>➰</option><option>📏</option><option>✨</option></select></div>
+        <div class="f" style="flex:1"><label>အမည်</label><input type="text" id="ms-name" class="fi"></div>
+      </div>
+      <div class="f"><label>ဈေးနှုန်း (Ks)</label><input type="number" id="ms-price" class="fi mono" style="font-size:16px"></div>
+      <div class="f"><label>ကော်မရှင် ရာခိုင်နှုန်း (ဥပမာ - 40, 50, 20)</label><input type="number" id="ms-comm" class="fi mono" placeholder="40" style="font-size:16px"></div>
+      <div style="display:flex;gap:12px;margin-top:24px"><button class="btn bd2" style="width:50px;font-size:18px" onclick="delSvc()">🗑️</button><button class="btn bp" id="btn-sv-svc" style="flex:1" onclick="saveSvc()">သိမ်းဆည်းမည်</button></div>
+    </div>
+  </div>
+
+</div>
+
+<div id="print-area" class="hidden"></div>
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════
+//  SUPABASE CONFIG
+// ════════════════════════════════════════
+const SUPA_URL = 'https://lshnrxjscisyklldabra.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzaG5yeGpzY2lzeWtsbGRhYnJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NDYyNzgsImV4cCI6MjA5MDIyMjI3OH0.yRQCa5b8xM0onkFZYWNpGTT4l7RcZP_bxwpddryHlT8';
+let sb = null;
+
+let me = null, myProfile = null, myShopId = null, myShopName = 'Shop Name';
+let employees = [], services = [], transactions = [], expenses = [], sessions = [], activeSession = null;
+let adminPin = localStorage.getItem('mrleo_admin_pin') || '9999';
+let cart = [], payM = 'cash', activeEmp = null, curRole = null;
+let pTarg = null, pAdmin = false, pBuf = '', blBuf = '';
+let lastTxn = null;
+
+const COLORS = ['#d29922','#4CAF7C','#388bfd','#E85D26','#B388FF','#FF6B6B','#FFD54F','#4DB6AC'];
+let selColor = COLORS[0];
+
+function initSB(){ try { sb = supabase.createClient(SUPA_URL, SUPA_KEY); return true; } catch(e) { return false; } }
+
+// ════════════════════════════════════════
+//  ROBUST DATABASE PAGINATION ENGINE 
+//  (Fixes the empty/0 transactions issue entirely)
+// ════════════════════════════════════════
+async function fetchAllData(tableName, shopId) {
+    let resultList = [];
+    let page = 0;
+    const pageSize = 1000;
+    
+    while(true) {
+        // We remove the .order() here because if your Supabase table doesn't have 
+        // the exact column name (like 'created_at'), it crashes and returns 0 rows!
+        // We will sort them locally in JavaScript instead to be 100% safe.
+        const { data, error } = await sb.from(tableName)
+                                        .select('*')
+                                        .eq('shop_id', shopId)
+                                        .range(page * pageSize, (page + 1) * pageSize - 1);
+                                        
+        if (error) { 
+            alert(`Error fetching ${tableName}: ` + error.message);
+            console.error(`Error fetching ${tableName}:`, error); 
+            break; 
+        }
+        
+        if (!data || data.length === 0) break;
+        resultList.push(...data);
+        
+        // Update UI Loading text
+        document.getElementById('loading-text').textContent = `Downloaded ${resultList.length} rows from ${tableName}...`;
+        
+        if (data.length < pageSize) break; // Finished
+        page++;
+    }
+    return resultList;
+}
+
+// ════════════════════════════════════════
+//  BOOT & LOAD
+// ════════════════════════════════════════
+async function boot(){
+  if(!initSB()){ alert('❌ Supabase Connection Failed.'); return; }
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session){ me = session.user; await loadCloudData(); }
+  else { document.getElementById('auth').style.display='flex'; document.getElementById('app').classList.remove('on'); }
+}
+
+async function login(){
+  const e = document.getElementById('le').value.trim(), p = document.getElementById('lp').value;
+  if(!e||!p){ toast('Email/Password ဖြည့်ပါ', 'err'); return; }
+  const { error } = await sb.auth.signInWithPassword({ email: e, password: p });
+  if(error) { document.getElementById('login-err').style.display='block'; document.getElementById('login-err').textContent = error.message; }
+  else { location.reload(); }
+}
+
+async function loadCloudData(){
+  try {
+    // Show Full Screen Loading Overlay
+    document.getElementById('loading-state').style.display = 'flex';
+    document.getElementById('loading-text').textContent = 'Connecting to shop profile...';
+
+    const {data: prof} = await sb.from('profiles').select('*').eq('id', me.id).single();
+    if(!prof || !prof.shop_id) { alert('No Shop ID found attached to this account.'); await sb.auth.signOut(); return; }
+    myShopId = prof.shop_id;
+
+    const {data: shop} = await sb.from('shops').select('*').eq('id', myShopId).single();
+    myShopName = shop ? shop.name : 'Unknown Shop';
+    document.getElementById('h-title').textContent = myShopName;
+    document.getElementById('sg-title').textContent = myShopName;
+
+    document.getElementById('loading-text').textContent = 'Downloading settings...';
+    // Small tables
+    const [empRes, svcRes, sessRes] = await Promise.all([
+      sb.from('employees').select('*').eq('shop_id', myShopId),
+      sb.from('services').select('*').eq('shop_id', myShopId),
+      sb.from('sessions').select('*').eq('shop_id', myShopId).is('closed_at', null)
+    ]);
+    employees = empRes.data || []; services = svcRes.data || [];
+    activeSession = sessRes.data && sessRes.data.length > 0 ? sessRes.data[0] : null;
+
+    // Load EVERYTHING Using the new Engine (No missing history)
+    document.getElementById('loading-text').textContent = 'Starting massive data sync...';
+    const allSess = await fetchAllData('sessions', myShopId);
+    const allTxn = await fetchAllData('transactions', myShopId);
+    const allExp = await fetchAllData('expenses', myShopId);
+    
+    // Process and sort locally to avoid SQL crashes
+    sessions = allSess.filter(s => s.closed_at !== null).sort((a, b) => new Date(getT(b)) - new Date(getT(a))); 
+    transactions = allTxn.sort((a, b) => new Date(getT(b)) - new Date(getT(a))); 
+    expenses = allExp.sort((a, b) => new Date(getT(b)) - new Date(getT(a)));
+
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('auth').style.display='none'; 
+    document.getElementById('app').classList.add('on');
+    
+    loadSavedLogo(); setRole(null, null); renderPOS(); opn('app-boot-lock');
+  } catch(e) { 
+      document.getElementById('loading-state').style.display = 'none';
+      alert('Failed to load data. ' + e.message); 
+      await sb.auth.signOut(); 
+  }
+}
+
+// ════════════════════════════════════════
+//  MATH & UTILS
+// ════════════════════════════════════════
+const getT = obj => obj ? (obj.created_at || obj.timestamp || obj.opened_at || new Date().toISOString()) : new Date().toISOString();
+
+const fTm = d => {
+  if(!d || d === 'null') return 'No Time';
+  const dt = new Date(d);
+  if (isNaN(dt)) return 'No Time';
+  return dt.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12:true});
+};
+
+const fmt=n=>Number(n).toLocaleString('en-US');
+const fmtK=n=>fmt(n)+' Ks';
+const sum = arr => arr.reduce((s, x) => s + (Number(x.total) || 0), 0);
+
+function init(n){return n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}
+function toast(m,t=''){const el=document.getElementById('toast');el.textContent=m;el.className='show '+t;setTimeout(()=>el.className='',4000)}
+function cls(id){document.getElementById(id).classList.remove('open')}
+function opn(id){document.getElementById(id).classList.add('open')}
+function parseItems(raw){ try{ return Array.isArray(raw)?raw:(typeof raw==='string'?JSON.parse(raw):[]); }catch(e){ return []; } }
+function getEmpNameForDetail(id) { if(!id) return 'Admin'; const e = employees.find(x => x.id === id); return e ? e.name : 'Unknown'; }
+
+// ════════════════════════════════════════
+//  SESSION & LOCK
+// ════════════════════════════════════════
+function blUpd(){ for(let i=0;i<4;i++) document.getElementById('bl-pd'+i).className='pdot'+(i<blBuf.length?' fll':''); }
+function blK(k){ if(blBuf.length<4) blBuf+=k; blUpd(); if(blBuf.length===4) setTimeout(blEnter,50); }
+function blDel(){ blBuf=blBuf.slice(0,-1); blUpd(); }
+function blEnter(){
+  if(blBuf === adminPin){ cls('app-boot-lock'); blBuf=''; blUpd(); checkSession(); } 
+  else { document.getElementById('bl-err').textContent = 'Admin PIN မှားယွင်းနေပါသည်'; blBuf=''; blUpd(); }
+}
+
+function checkSession(){
+  if(!activeSession){ opn('session-gate'); setRole({name:'Admin',id:'admin',color:'var(--gold)'}, 'admin'); } 
+  else { cls('session-gate'); openPinOverlay(true); }
+}
+
+async function openSession(){
+  const amt = parseFloat(document.getElementById('sg-cash').value)||0;
+  document.getElementById('btn-open-sess').disabled=true;
+  const { data, error } = await sb.from('sessions').insert({ shop_id: myShopId, opening_cash: amt, opened_at: new Date().toISOString() }).select().single();
+  document.getElementById('btn-open-sess').disabled=false;
+  if(error){ toast('Error: '+error.message, 'err'); return; }
+  activeSession = data; cls('session-gate'); renderSales(); toast('✅ စာရင်းဖွင့်လှစ်ပြီးပါပြီ','ok'); openPinOverlay(true);
+}
+
+// ════════════════════════════════════════
+//  POS & CART & SALE FIX
+// ════════════════════════════════════════
+function renderPOS(){ document.getElementById('services-grid').innerHTML=services.map(s=>`<button class="svc-btn" onclick="addC('${s.id}')"><div class="svc-emoji">${s.emoji}</div><div class="svc-name">${s.name}</div><div class="svc-price">${fmt(s.price)}</div></button>`).join(''); }
+function addC(id){
+  if(!activeEmp){ openPinOverlay(true); return; }
+  const s=services.find(x=>x.id===id); if(!s) return;
+  const ex=cart.find(i=>i.id===id);
+  let rate = s.comm_rate !== undefined ? s.comm_rate : (s.commRate !== undefined ? s.commRate : 0.4);
+  if(ex) ex.qty++; else cart.push({...s, qty:1, savedRate: Number(rate)}); renderCart();
+}
+function updC(id,d){ const it=cart.find(i=>i.id===id); if(!it) return; it.qty+=d; if(it.qty<1) cart=cart.filter(i=>i.id!==id); renderCart(); }
+function cartTot(){ return cart.reduce((s,i)=>s+(Number(i.price)*Number(i.qty)),0); }
+function renderCart(){
+  const tc=cart.reduce((s,i)=>s+i.qty,0); const cb=document.getElementById('cart-badge'); if(tc>0){cb.textContent=tc;cb.classList.remove('hidden');}else cb.classList.add('hidden');
+  document.getElementById('cart-total').textContent = fmtK(cartTot());
+  document.getElementById('btn-checkout').disabled = cart.length===0;
+  const cl=document.getElementById('cart-list');
+  if(!cart.length) cl.innerHTML=`<div class="empty"><div class="empty-ic">💈</div><div style="font-size:13px">ဝန်ဆောင်မှု ရွေးချယ်ပါ</div></div>`;
+  else cl.innerHTML=cart.map(i=>`<div class="cart-item"><div class="ci-emoji">${i.emoji}</div><div class="ci-info"><div class="ci-name">${i.name}</div><div class="ci-price">${fmtK(i.price)}</div></div><div class="qty-ctrl"><button class="qb" onclick="updC('${i.id}',-1)">−</button><div class="qn">${i.qty}</div><button class="qb" onclick="updC('${i.id}',1)">+</button></div></div>`).join('');
+}
+
+function openPayModal(){
+  document.getElementById('pay-amt').textContent = fmtK(cartTot());
+  let opts = employees.filter(e=>e.status==='active').map(e=>`<option value="${e.id}">${e.name}</option>`);
+  opts.unshift(`<option value="admin">Admin / Cashier (ကော်မရှင်မရှိ)</option>`);
+  document.getElementById('pay-emp').innerHTML = opts.join('');
+  if(activeEmp && activeEmp.id !== 'admin') document.getElementById('pay-emp').value = activeEmp.id;
+  setPM('cash'); opn('modal-pay');
+}
+function setPM(m){ payM=m; document.getElementById('pm-cash').className='pay-btn'+(m==='cash'?' on-c':''); document.getElementById('pm-mmqr').className='pay-btn'+(m==='mmqr'?' on-m':''); }
+
+async function completeSale(){
+  const comm = Math.round(cart.reduce((s,i) => s + (Number(i.price) * Number(i.qty) * Number(i.savedRate||0.4)), 0));
+  const selEmp = document.getElementById('pay-emp').value;
+  const btn = document.getElementById('btn-conf-pay');
+  btn.disabled=true; btn.textContent='Processing...';
+
+  const cleanItems = cart.map(i => ({ name: i.name, price: i.price, qty: i.qty, emoji: i.emoji, savedRate: i.savedRate }));
+
+  const txnData = {
+    shop_id: myShopId, session_id: activeSession.id,
+    employee_id: (selEmp === 'admin' || !selEmp) ? null : selEmp, 
+    items: cleanItems, total: cartTot(), commission: comm, payment_method: payM,
+  };
+
+  const { data, error } = await sb.from('transactions').insert(txnData).select().single();
+  btn.disabled=false; btn.textContent='ငွေရှင်းမည်';
+
+  if(error || !data){ toast(`Error: ${error?.message || 'Sale Failed'}`, 'err'); return; }
+
+  transactions.unshift(data); // Add to top since we order by desc
+  lastTxn = data; cls('modal-pay');
+  document.getElementById('rec-id').textContent='#'+data.id.slice(0,8);
+  opn('modal-rec'); renderSales(); 
+}
+
+// ════════════════════════════════════════
+//  VOUCHER PRINTING 
+// ════════════════════════════════════════
+function printReceipt() {
+  if(!lastTxn) return;
+  const emp = employees.find(e => e.id === lastTxn.employee_id);
+  const items = parseItems(lastTxn.items);
+  const prt = document.getElementById('print-area');
+  
+  prt.innerHTML = `
+    <div id="receipt-content">
+      <div class="rc-shop">💈 ${myShopName}</div>
+      <div class="rc-tag">အရောင်း ဘောက်ချာ</div>
+      <div class="rc-meta">${new Date(getT(lastTxn)).toLocaleDateString()} · ${fTm(getT(lastTxn))}<br>#${lastTxn.id.slice(0,8)}</div>
+      <div class="rc-div"></div>
+      ${items.map(it=>`<div class="rc-line"><span>${it.emoji} ${it.name}${it.qty>1?' ×'+it.qty:''}</span><span>${fmt(it.price*it.qty)}</span></div>`).join('')}
+      <div class="rc-div"></div>
+      <div class="rc-line" style="font-size:16px;font-weight:800"><span>စုစုပေါင်း</span><span>${fmtK(lastTxn.total)}</span></div>
+      <div class="rc-line" style="font-size:11px;color:#555;margin-top:8px"><span>ငွေချေမှု</span><span>${lastTxn.payment_method==='cash'?'💵 ငွေသား':'📱 KPay/QR'}</span></div>
+      <div class="rc-line" style="font-size:11px;color:#555"><span>ဝန်ထမ်း</span><span>${emp?emp.name:'Admin'}</span></div>
+    </div>
+  `;
+  
+  prt.classList.remove('hidden');
+  window.print();
+  prt.classList.add('hidden');
+}
+
+
+// ════════════════════════════════════════
+//  ADMIN: EMPLOYEES & SERVICES 
+// ════════════════════════════════════════
+let aView='emp';
+function setAdminView(v){
+  aView=v;
+  document.getElementById('fa-emp').className='fc'+(v==='emp'?' on':'');
+  document.getElementById('fa-svc').className='fc'+(v==='svc'?' on':'');
+  document.getElementById('fa-sec').className='fc'+(v==='sec'?' on':'');
+  document.getElementById('av-emp').className=v==='emp'?'':'hidden';
+  document.getElementById('av-svc').className=v==='svc'?'':'hidden';
+  document.getElementById('av-sec').className=v==='sec'?'':'hidden';
+  if(v==='emp') renderEmpAdmin(); else if(v==='svc') renderSvcAdmin();
+}
+
+function renderColorPick(id, sel){ document.getElementById(id).innerHTML = COLORS.map(c=>`<div class="c-swatch ${c===sel?'sel':''}" style="background:${c}" onclick="selColor='${c}';renderColorPick('${id}','${c}')"></div>`).join(''); }
+
+function renderEmpAdmin(){ document.getElementById('admin-emp-list').innerHTML = employees.map(e=>`<div class="list-row"><div class="lr-icon" style="background:${e.color}">${init(e.name)}</div><div class="lr-info"><div class="lr-title">${e.name} <span class="bdg ${e.status==='active'?'ba':'bp2'}">${e.status}</span></div><div class="lr-sub">PIN: ${e.pin} · ${e.role_title}</div></div><button class="btn bo" onclick="editEmp('${e.id}')">ပြင်မည်</button></div>`).join(''); }
+function openEmpModal(){ document.getElementById('me-id').value=''; document.getElementById('me-title').textContent='ဝန်ထမ်းအသစ်'; document.getElementById('me-name').value=''; document.getElementById('me-pin').value=''; selColor=COLORS[0]; renderColorPick('me-colors',selColor); opn('modal-emp'); }
+function editEmp(id){ const e=employees.find(x=>x.id===id); if(!e)return; document.getElementById('me-id').value=e.id; document.getElementById('me-title').textContent='ဝန်ထမ်း ပြင်ဆင်ရန်'; document.getElementById('me-name').value=e.name; document.getElementById('me-pin').value=e.pin; document.getElementById('me-status').value=e.status; selColor=e.color; renderColorPick('me-colors',selColor); opn('modal-emp'); }
+async function saveEmp(){
+  const id=document.getElementById('me-id').value, n=document.getElementById('me-name').value.trim(), p=document.getElementById('me-pin').value.trim(), s=document.getElementById('me-status').value;
+  if(!n || !/^\d{4}$/.test(p)){ toast('အမည် နှင့် PIN ၄ လုံး ပြည့်စုံစွာ ထည့်ပါ','err'); return; }
+  const btn = document.getElementById('btn-sv-emp'); btn.disabled=true;
+  if(id){ const {data, error} = await sb.from('employees').update({name:n, pin:p, color:selColor, status:s}).eq('id', id).select().single(); if(error){ toast(error.message, 'err'); btn.disabled=false; return; } employees=employees.map(e=>e.id===id?data:e); } 
+  else { const {data, error} = await sb.from('employees').insert({shop_id: myShopId, name:n, pin:p, color:selColor, status:s}).select().single(); if(error){ toast(error.message, 'err'); btn.disabled=false; return; } employees.push(data); }
+  btn.disabled=false; cls('modal-emp'); renderEmpAdmin(); toast('✅ သိမ်းဆည်းပြီးပါပြီ','ok');
+}
+async function delEmp(){
+  const id=document.getElementById('me-id').value; if(!id)return; if(employees.length<=1){ toast('အနည်းဆုံး တစ်ဦးထားရမည်','err'); return; }
+  if(!confirm('ဖျက်ပစ်မည်လား?'))return; await sb.from('employees').delete().eq('id',id); employees=employees.filter(e=>e.id!==id); cls('modal-emp'); renderEmpAdmin(); toast('ဖျက်ပြီးပါပြီ', 'ok');
+}
+
+function renderSvcAdmin(){ document.getElementById('admin-svc-list').innerHTML = services.map(s=>`<div class="list-row"><div style="font-size:28px;width:36px;text-align:center">${s.emoji}</div><div class="lr-info"><div class="lr-title">${s.name}</div><div style="margin-top:6px"><span class="mono c-gold" style="font-size:14px;font-weight:700">${fmtK(s.price)}</span></div></div><button class="btn bo" onclick="editSvc('${s.id}')">ပြင်မည်</button></div>`).join(''); }
+function openSvcModal(){ document.getElementById('ms-id').value=''; document.getElementById('ms-title').textContent='ဝန်ဆောင်မှုအသစ်'; document.getElementById('ms-name').value=''; document.getElementById('ms-price').value=''; document.getElementById('ms-comm').value='40'; opn('modal-svc'); }
+function editSvc(id){ const s=services.find(x=>x.id===id); if(!s)return; document.getElementById('ms-id').value=s.id; document.getElementById('ms-title').textContent='ဝန်ဆောင်မှု ပြင်ဆင်ရန်'; document.getElementById('ms-emoji').value=s.emoji; document.getElementById('ms-name').value=s.name; document.getElementById('ms-price').value=s.price; document.getElementById('ms-comm').value=Math.round((s.comm_rate||0.4)*100).toString(); opn('modal-svc'); }
+async function saveSvc(){
+  const id=document.getElementById('ms-id').value, e=document.getElementById('ms-emoji').value, n=document.getElementById('ms-name').value.trim(), p=parseInt(document.getElementById('ms-price').value)||0;
+  let cRate = parseFloat(document.getElementById('ms-comm').value); if(isNaN(cRate) || cRate < 0) cRate = 40; cRate = cRate / 100;
+  if(!n || p<=0){ toast('အမည် နှင့် ဈေးနှုန်း အမှန်ထည့်ပါ','err'); return; }
+  const btn = document.getElementById('btn-sv-svc'); btn.disabled=true;
+  if(id){ const {data, error} = await sb.from('services').update({emoji:e, name:n, price:p, comm_rate:cRate}).eq('id',id).select().single(); if(error){ toast(error.message,'err'); btn.disabled=false; return; } services=services.map(s=>s.id===id?data:s); } 
+  else { const {data, error} = await sb.from('services').insert({shop_id: myShopId, emoji:e, name:n, price:p, comm_rate:cRate}).select().single(); if(error){ toast(error.message,'err'); btn.disabled=false; return; } services.push(data); }
+  btn.disabled=false; cls('modal-svc'); renderSvcAdmin(); renderPOS(); toast('✅ သိမ်းဆည်းပြီးပါပြီ','ok');
+}
+async function delSvc(){
+  const id=document.getElementById('ms-id').value; if(!id)return; if(services.length<=1){ toast('အနည်းဆုံး တစ်ခုထားရမည်','err'); return; }
+  if(!confirm('ဖျက်ပစ်မည်လား?'))return; await sb.from('services').delete().eq('id',id); services=services.filter(s=>s.id!==id); cls('modal-svc'); renderSvcAdmin(); renderPOS(); toast('ဖျက်ပြီးပါပြီ', 'ok');
+}
+
+async function delTxn(id) {
+  if(!confirm('ဤအရောင်းဘောက်ချာကို အပြီးတိုင် ဖျက်ပစ်မည်လား? (Are you sure you want to delete this?)')) return;
+  toast('ဖျက်နေပါသည်...', 'ok');
+  const { error } = await sb.from('transactions').delete().eq('id', id);
+  if (error) { toast('Error: ' + error.message, 'err'); return; }
+  transactions = transactions.filter(t => t.id !== id);
+  renderSales(); toast('🗑️ ဖျက်ပစ်လိုက်ပါပြီ', 'ok');
+}
+
+// ════════════════════════════════════════
+//  UI & ROUTING
+// ════════════════════════════════════════
+function switchTab(t){
+  document.querySelectorAll('.nb').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+t));
+  if(t==='sales'){ setSalesView('current'); } 
+  if(t==='comm'){ if(!document.getElementById('comm-date').value) document.getElementById('comm-date').value=todayStr(); renderComm(); } 
+  if(t==='admin') setAdminView('emp');
+}
+
+// ======================================
+//  SALES & REPORTS TAB LOGIC
+// ======================================
+let slsView='current';
+let rptMode='monthly';
+
+function setSalesView(v){
+  slsView=v;
+  document.getElementById('fc-curr').className='fc'+(v==='current'?' on':'');
+  document.getElementById('fc-hist').className='fc'+(v==='history'?' on':'');
+  document.getElementById('fc-rpt').className='fc'+(v==='report'?' on':'');
+  
+  document.getElementById('sv-current').className=v==='current'?'':'hidden';
+  document.getElementById('sv-history').className=v==='history'?'':'hidden';
+  document.getElementById('sv-report').className=v==='report'?'':'hidden';
+  
+  if(v==='history') renderHistory(); 
+  else if (v==='current') renderSales();
+  else if (v==='report') {
+      if(!document.getElementById('rpt-month-input').value) document.getElementById('rpt-month-input').value = todayStr().substring(0,7);
+      renderReport();
+  }
+}
+
+function renderSales(){
+  if(!activeSession){ document.getElementById('sv-current-empty').classList.remove('hidden'); document.getElementById('sv-current-data').classList.add('hidden'); return; }
+  document.getElementById('sv-current-empty').classList.add('hidden'); document.getElementById('sv-current-data').classList.remove('hidden');
+  
+  const sId = activeSession.id;
+  const tX = transactions.filter(t=>t.session_id===sId);
+  const eX = expenses.filter(e=>e.session_id===sId);
+  const cT = tX.filter(t=>t.payment_method==='cash');
+  const mT = tX.filter(t=>t.payment_method==='mmqr');
+  
+  document.getElementById('ss-id').textContent = '#' + String(sId).slice(0,8);
+  document.getElementById('ss-time').textContent = fTm(getT(activeSession));
+
+  document.getElementById('ss-tot').textContent = fmtK(sum(tX));
+  document.getElementById('ss-cash').textContent = fmtK(sum(cT));
+  document.getElementById('ss-mmqr').textContent = fmtK(sum(mT));
+
+  const openCash = activeSession.opening_cash || 0;
+  const totalExp = eX.reduce((s, e) => s + (e.amount || 0), 0);
+  document.getElementById('ss-open').textContent = fmt(openCash);
+  document.getElementById('ss-cash-add').textContent = fmt(sum(cT));
+  document.getElementById('ss-exp').textContent = fmt(totalExp);
+  document.getElementById('ss-expect').textContent = fmtK(openCash + sum(cT) - totalExp);
+
+  const getEmpColor = id => { if(!id) return 'var(--gold)'; const e=employees.find(x=>x.id===id); return e?e.color:'#888'; };
+  
+  document.getElementById('ss-txns').innerHTML = tX.length===0
+    ? '<div class="empty" style="padding:20px"><div class="empty-ic">🧾</div><div>အရောင်းမရှိသေးပါ</div></div>'
+    : tX.map(t=>{
+        const items=parseItems(t.items); 
+        const empName=getEmpNameForDetail(t.employee_id); 
+        const empColor=getEmpColor(t.employee_id);
+        const delBtn = curRole === 'admin' ? `<button class="btn bo" style="padding:6px 10px;font-size:11px;margin-top:6px;color:var(--r);border-color:var(--rs)" onclick="delTxn('${t.id}')">ဖျက်မည်</button>` : '';
+            
+        return `<div class="list-row">
+            <div class="lr-icon" style="background:${empColor};font-size:11px">${init(empName)}</div>
+            <div class="lr-info">
+                <div class="lr-title">${items.map(i=>i.emoji||'').join('')} ${items.map(i=>i.name).join(', ')}</div>
+                <div class="lr-sub">${empName} · ${fTm(getT(t))} · <span class="${t.payment_method==='cash'?'c-green':'c-blue'}">${t.payment_method==='cash'?'💵 Cash':'📱 QR'}</span></div>
+            </div>
+            <div class="lr-right"><div class="lr-val">${fmtK(t.total)}</div>${delBtn}</div>
+        </div>`;
+      }).join('');
+}
+
+function renderHistory(){
+  if(!sessions.length){ 
+     document.getElementById('hist-sessions').innerHTML='<div class="empty"><div class="empty-ic">📋</div><div>မှတ်တမ်းမရှိသေးပါ</div></div>'; 
+     return; 
+  }
+
+  document.getElementById('hist-sessions').innerHTML = sessions.map(s=>{
+    const tX=transactions.filter(t=>t.session_id===s.id);
+    const cashTxns=tX.filter(t=>t.payment_method==='cash');
+    const qrTxns=tX.filter(t=>t.payment_method==='mmqr');
+    return `<div class="card" style="margin-bottom:12px; cursor:pointer; transition: border-color 0.2s;" onclick="viewSessionDetail('${s.id}')" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--bd)'">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;border-bottom:1px solid var(--bd);padding-bottom:10px">
+        <span style="font-size:12px;color:var(--t2);font-weight:600">${new Date(s.opened_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</span>
+        <span class="mono c-gold" style="font-weight:700;font-size:16px">${fmtK(sum(tX))}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
+        <div style="color:var(--g)">💵 Cash: <span class="mono">${fmtK(sum(cashTxns))}</span></div>
+        <div style="color:var(--b)">📱 QR: <span class="mono">${fmtK(sum(qrTxns))}</span></div>
+        <div style="color:var(--t2)">ဆိုင်ဖွင့်: ${fmtK(s.opening_cash||0)}</div>
+        <div style="color:${(s.cash_diff||0)<0?'var(--r)':'var(--t2)'}">ကွာဟချက်: ${fmtK(s.cash_diff||0)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════
+//  REPORTS TAB
+// ════════════════════════════════════════
+function setRptMode(m) {
+    rptMode = m;
+    document.getElementById('rpt-btn-mo').className = 'fc' + (m==='monthly'?' on':'');
+    document.getElementById('rpt-btn-yr').className = 'fc' + (m==='yearly'?' on':'');
+    
+    if (m === 'monthly') {
+        document.getElementById('rpt-month-input').classList.remove('hidden');
+        document.getElementById('rpt-year-input').classList.add('hidden');
+    } else {
+        document.getElementById('rpt-month-input').classList.add('hidden');
+        document.getElementById('rpt-year-input').classList.remove('hidden');
+        if(!document.getElementById('rpt-year-input').value) document.getElementById('rpt-year-input').value = new Date().getFullYear();
+    }
+    renderReport();
+}
+
+function renderReport() {
+    let fTxn = [];
+    let fExp = [];
+    let label = '';
+
+    if (rptMode === 'monthly') {
+        const mo = document.getElementById('rpt-month-input').value; // Format: YYYY-MM
+        if(!mo) return;
+        fTxn = transactions.filter(t => getT(t).startsWith(mo));
+        fExp = expenses.filter(e => getT(e).startsWith(mo));
+        label = new Date(mo + "-01").toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
+    } else {
+        const yr = document.getElementById('rpt-year-input').value; // Format: YYYY
+        if(!yr) return;
+        fTxn = transactions.filter(t => getT(t).startsWith(yr));
+        fExp = expenses.filter(e => getT(e).startsWith(yr));
+        label = yr + " Yearly Report";
+    }
+
+    const tSales = sum(fTxn);
+    const tCash = sum(fTxn.filter(t => t.payment_method === 'cash'));
+    const tQR = sum(fTxn.filter(t => t.payment_method === 'mmqr'));
+    const tExp = fExp.reduce((s, e) => s + (e.amount || 0), 0);
+    const net = tSales - tExp;
+
+    document.getElementById('rpt-summary').innerHTML = `
+        <div style="font-weight:700;color:var(--gold);margin-bottom:12px;font-size:15px;text-align:center">${label}</div>
+        <div class="sg">
+            <div class="sc"><div class="sl">ရောင်းရငွေ (Total Sales)</div><div class="sv c-gold">${fmtK(tSales)}</div></div>
+            <div class="sc"><div class="sl">အသားတင် (Net Profit)</div><div class="sv c-blue">${fmtK(net)}</div></div>
+            <div class="sc"><div class="sl">💵 ငွေသား (Cash)</div><div class="sv c-green">${fmtK(tCash)}</div></div>
+            <div class="sc"><div class="sl">📱 KPay/QR</div><div class="sv" style="color:var(--b)">${fmtK(tQR)}</div></div>
+            <div class="sc" style="grid-column: span 2;"><div class="sl">အသုံးစရိတ် (Expenses)</div><div class="sv c-red">-${fmtK(tExp)}</div></div>
+        </div>
+        <div style="margin-top:16px; font-size:12px; color:var(--t2); text-align:center;">Transactions: ${fTxn.length} | Expenses: ${fExp.length}</div>
+    `;
+}
+
+function exportReportExcel() {
+    const BOM = '\uFEFF';
+    let csv = BOM + 'Type,ID,Date,Time,Total,Payment Method,Employee,Items/Description\n';
+    
+    let mo = document.getElementById('rpt-month-input').value;
+    let yr = document.getElementById('rpt-year-input').value;
+    let prefix = rptMode === 'monthly' ? mo : yr;
+    if(!prefix) return toast('ရက်စွဲရွေးပါ', 'err');
+
+    let fTxn = transactions.filter(t => getT(t).startsWith(prefix));
+    let fExp = expenses.filter(e => getT(e).startsWith(prefix));
+
+    fTxn.forEach(t => {
+        const dt = new Date(getT(t));
+        const empName = getEmpNameForDetail(t.employee_id);
+        const items = parseItems(t.items).map(i => `${i.name} (x${i.qty})`).join('; ');
+        csv += `Sale,${t.id},${dt.toLocaleDateString()},${dt.toLocaleTimeString()},${t.total},${t.payment_method},${empName},"${items}"\n`;
+    });
+
+    fExp.forEach(e => {
+        const dt = new Date(getT(e));
+        csv += `Expense,${e.id},${dt.toLocaleDateString()},${dt.toLocaleTimeString()},-${e.amount},Cash,Admin,"${e.description}"\n`;
+    });
+
+    if(fTxn.length === 0 && fExp.length === 0) return toast('ဒေတာ မရှိပါ', 'err');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `MRLEO_Report_${prefix}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('✅ အစီရင်ခံစာ Excel ထုတ်ပြီးပါပြီ', 'ok');
+}
+
+// ════════════════════════════════════════
+//  EXPORT FULL EXCEL (FIXED)
+// ════════════════════════════════════════
+function exportFullDatabase() {
+    if(transactions.length === 0 && expenses.length === 0) return toast('No data to export', 'err');
+
+    const BOM = '\uFEFF';
+    let csv = BOM + 'Type,ID,Date,Time,Total,Payment Method,Employee,Items/Description,Session ID\n';
+
+    transactions.forEach(t => {
+        const dt = new Date(getT(t));
+        const empName = getEmpNameForDetail(t.employee_id);
+        const items = parseItems(t.items).map(i => `${i.name} (x${i.qty})`).join('; ');
+        csv += `Sale,${t.id},${dt.toLocaleDateString()},${dt.toLocaleTimeString()},${t.total},${t.payment_method},${empName},"${items}",${t.session_id}\n`;
+    });
+
+    expenses.forEach(e => {
+        const dt = new Date(getT(e));
+        csv += `Expense,${e.id},${dt.toLocaleDateString()},${dt.toLocaleTimeString()},-${e.amount},Cash,Admin,"${e.description}",${e.session_id}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `MRLEO_Full_Database_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('✅ Full Database Excel ဒေါင်းလုဒ်လုပ်ပြီးပါပြီ', 'ok');
+}
+
+// ════════════════════════════════════════
+//  SESSION DETAIL MODAL
+// ════════════════════════════════════════
+function viewSessionDetail(sId) {
+    const sess = sessions.find(s => s.id === sId);
+    if(!sess) return;
+
+    const tX = transactions.filter(t => t.session_id === sId);
+    const eX = expenses.filter(e => e.session_id === sId);
+    const cT = tX.filter(t => t.payment_method === 'cash');
+    const mT = tX.filter(t => t.payment_method === 'mmqr');
+
+    const totalExp = eX.reduce((s, e) => s + (e.amount || 0), 0);
+
+    let html = `
+        <div style="background:var(--sf2);padding:14px;border-radius:12px;margin-bottom:16px;border:1px solid var(--bd)">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span style="color:var(--t2)">ဖွင့်ချိန်:</span><span class="mono">${new Date(sess.opened_at).toLocaleString()}</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span style="color:var(--t2)">ပိတ်ချိန်:</span><span class="mono">${sess.closed_at ? new Date(sess.closed_at).toLocaleString() : 'Not Closed'}</span></div>
+            <hr style="border-color:var(--bd);margin:10px 0">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span>Total Sales:</span><span class="mono c-gold">${fmtK(sum(tX))}</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span class="c-green">💵 Cash Sales:</span><span class="mono">${fmtK(sum(cT))}</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span class="c-blue">📱 QR Sales:</span><span class="mono">${fmtK(sum(mT))}</span></div>
+            <hr style="border-color:var(--bd);margin:10px 0">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span style="color:var(--t2)">Opening Cash:</span><span class="mono">${fmtK(sess.opening_cash || 0)}</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span class="c-red">Expenses:</span><span class="mono c-red">-${fmtK(totalExp)}</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span class="c-gold">Expected Cash:</span><span class="mono c-gold">${fmtK(sess.expected_cash || 0)}</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span class="c-green">Actual Cash:</span><span class="mono c-green">${fmtK(sess.actual_cash || 0)}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:bold"><span style="color:var(--t2)">Difference:</span><span class="mono ${(sess.cash_diff||0)<0?'c-red':'c-gold'}">${fmtK(sess.cash_diff || 0)}</span></div>
+        </div>
+    `;
+
+    if(eX.length > 0) {
+        html += `<div style="font-weight:bold;margin-bottom:8px;color:var(--r)">အသုံးစရိတ်များ (Expenses)</div>`;
+        html += eX.map(e => `<div style="display:flex;justify-content:space-between;font-size:12px;padding:8px 0;border-bottom:1px solid var(--bd)"><span>${e.description}</span><span class="c-red mono">-${fmtK(e.amount)}</span></div>`).join('');
+        html += `<div style="margin-bottom:16px"></div>`;
+    }
+
+    if(tX.length > 0) {
+        html += `<div style="font-weight:bold;margin-bottom:8px;color:var(--g)">အရောင်းများ (Transactions)</div>`;
+        html += tX.map(t => {
+            const items = parseItems(t.items);
+            const empName = getEmpNameForDetail(t.employee_id);
+            return `<div style="display:flex;justify-content:space-between;font-size:12px;padding:8px 0;border-bottom:1px solid var(--bd)">
+                <div style="flex:1">
+                    <div style="font-weight:bold">${items.map(i=>i.emoji||'').join('')} ${items.map(i=>i.name).join(', ')}</div>
+                    <div style="color:var(--t3);font-size:10px">${empName} · ${t.payment_method==='cash'?'Cash':'QR'} · ${new Date(getT(t)).toLocaleTimeString()}</div>
+                </div>
+                <div class="c-gold mono" style="font-weight:bold;text-align:right">${fmtK(t.total)}</div>
+            </div>`;
+        }).join('');
+    }
+
+    document.getElementById('sd-content').innerHTML = html;
+    opn('modal-sess-detail');
+}
+
+// ════════════════════════════════════════
+//  OTHER HELPERS
+// ════════════════════════════════════════
+function setRole(emp, role){
+  activeEmp=emp; curRole=role;
+  document.querySelectorAll('.admin-only').forEach(e=>e.style.display=role==='admin'?'flex':'none');
+  if(role){
+    document.getElementById('h-av').textContent=init(emp.name);
+    document.getElementById('h-av').style.background=emp.color||'var(--gold)';
+    document.getElementById('h-name').textContent=emp.name;
+  } else {
+    document.getElementById('h-av').textContent='?';
+    document.getElementById('h-av').style.background='var(--bd)';
+    document.getElementById('h-name').textContent='---';
+  }
+}
+
+function updPD(){ for(let i=0;i<4;i++) document.getElementById('pd'+i).className='pdot'+(i<pBuf.length?' fll':''); }
+function padK(k){ if(pBuf.length<4) pBuf+=k; updPD(); if(pBuf.length===4) setTimeout(padEnter,50); }
+function padDel(){ pBuf=pBuf.slice(0,-1); updPD(); }
+function openPinOverlay(req){
+  pTarg=null; pAdmin=false; pBuf='';
+  document.getElementById('pin-users').innerHTML=employees.map(e=>`<button class="svc-btn" style="padding:14px 10px;border-radius:12px" onclick="pTarg=employees.find(x=>x.id==='${e.id}');pAdmin=false;pBuf='';updPD();cls('pin-overlay');opn('pin-pad-modal');"><div class="lr-icon" style="background:${e.color}">${init(e.name)}</div><div class="svc-name">${e.name}</div></button>`).join('') + `<button class="svc-btn" style="padding:14px 10px;border-radius:12px;border-color:var(--gold)" onclick="pTarg=null;pAdmin=true;pBuf='';updPD();cls('pin-overlay');opn('pin-pad-modal');"><div class="lr-icon" style="background:var(--gold-sub);color:var(--gold)">🔑</div><div class="svc-name c-gold">Admin</div></button>`;
+  opn('pin-overlay');
+}
+function padEnter(){
+  if(pBuf.length<4) return;
+  if(pAdmin && pBuf===adminPin){ setRole({name:'Admin', id:'admin'}, 'admin'); cls('pin-pad-modal'); if(!activeSession) opn('session-gate'); }
+  else if(!pAdmin && pBuf===pTarg.pin){ setRole(pTarg, 'staff'); cls('pin-pad-modal'); }
+  else { document.getElementById('pad-err').textContent='PIN မှားနေပါသည်။'; pBuf=''; updPD(); }
+}
+function triggerLogoUpload(){ document.getElementById('logo-file-input').click(); }
+function handleLogoUpload(e){ const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = (ev)=>{ localStorage.setItem('mrleo_shop_logo', ev.target.result); loadSavedLogo(); toast('✅ လိုဂို သိမ်းဆည်းပြီးပါပြီ','ok'); }; r.readAsDataURL(f); }
+function loadSavedLogo(){ const u = localStorage.getItem('mrleo_shop_logo'); if(u){ const imgs = ['shop-logo-img', 'admin-logo-img'], phs = ['shop-logo-placeholder', 'admin-logo-ph']; imgs.forEach(i=>{if(document.getElementById(i)) {document.getElementById(i).src=u; document.getElementById(i).style.display='block';}}); phs.forEach(p=>{if(document.getElementById(p)) document.getElementById(p).style.display='none';}); } }
+async function cloudLogout(){ if(confirm('Cloud မှ ထွက်မည်လား?')) await sb.auth.signOut(); }
+function removeLogo(){ localStorage.removeItem('mrleo_shop_logo'); const imgs=['shop-logo-img','admin-logo-img'], phs=['shop-logo-placeholder','admin-logo-ph']; imgs.forEach(i=>{const el=document.getElementById(i); if(el){el.src='';el.style.display='none';}}); phs.forEach(p=>{const el=document.getElementById(p); if(el) el.style.display='block';}); toast('ဖယ်ရှားပြီးပါပြီ','ok'); }
+
+const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+const startD=d=>{const x=new Date(d);x.setHours(0,0,0,0);return x;};
+const isDay=(a,b)=>startD(new Date(a)).getTime()===startD(new Date(b)).getTime();
+const isWk=(a,b)=>{const da=new Date(a),db=new Date(b);const ma=new Date(da);ma.setDate(da.getDate()-((da.getDay()+6)%7));ma.setHours(0,0,0,0);const mb=new Date(db);mb.setDate(db.getDate()-((db.getDay()+6)%7));mb.setHours(0,0,0,0);return ma.getTime()===mb.getTime();};
+const isMo=(a,b)=>{const da=new Date(a),db=new Date(b);return da.getFullYear()===db.getFullYear()&&da.getMonth()===db.getMonth();};
+
+setInterval(()=>{ const n=new Date(); const el=document.getElementById('clock-dt'); if(el) el.textContent=n.toLocaleDateString('en-US',{weekday:'short',day:'numeric',month:'short'})+' · '+n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}); },1000);
+
+function openSessionGate(){ opn('session-gate'); }
+
+function openCloseSessionModal(){
+  if(!activeSession) return;
+  const cT=transactions.filter(t=>t.session_id===activeSession.id && t.payment_method==='cash');
+  const eX=expenses.filter(e=>e.session_id===activeSession.id);
+  const expCash=(activeSession.opening_cash||0)+sum(cT)-eX.reduce((s,e)=>s+(e.amount||0),0);
+  document.getElementById('cs-expected').textContent=fmtK(expCash);
+  document.getElementById('cs-actual').value=expCash;
+  opn('modal-close-sess');
+}
+
+async function closeSession(){
+  const act=parseFloat(document.getElementById('cs-actual').value)||0;
+  const cT=transactions.filter(t=>t.session_id===activeSession.id && t.payment_method==='cash');
+  const eX=expenses.filter(e=>e.session_id===activeSession.id);
+  const expCash=(activeSession.opening_cash||0)+sum(cT)-eX.reduce((s,e)=>s+(e.amount||0),0);
+  const btn=document.getElementById('btn-cls-sess'); btn.disabled=true; btn.textContent='Processing...';
+  const {error}=await sb.from('sessions').update({
+    closed_at:new Date().toISOString(), expected_cash:expCash, actual_cash:act, cash_diff:act-expCash
+  }).eq('id',activeSession.id);
+  btn.disabled=false; btn.textContent='စာရင်းပိတ် သိမ်းဆည်းမည်';
+  if(error){ toast('Error: '+error.message,'err'); return; }
+  sessions.unshift({...activeSession, closed_at:new Date().toISOString(), expected_cash:expCash, actual_cash:act, cash_diff:act-expCash});
+  activeSession=null; cls('modal-close-sess');
+  opn('app-boot-lock'); pBuf=''; blBuf=''; blUpd();
+  toast('🔒 စာရင်းပိတ်သိမ်းပြီးပါပြီ','ok');
+}
+
+function openExpenseModal(){
+  if(!activeSession){ toast('Session မဖွင့်ရသေးပါ','err'); return; }
+  document.getElementById('exp-desc').value=''; document.getElementById('exp-amt').value=''; opn('modal-exp');
+}
+
+async function saveExp(){
+  const d=document.getElementById('exp-desc').value.trim();
+  const a=parseFloat(document.getElementById('exp-amt').value)||0;
+  if(!d||a<=0){ toast('အချက်အလက် ပြည့်စုံစွာ ထည့်ပါ','err'); return; }
+  const btn=document.getElementById('btn-sv-exp'); btn.disabled=true;
+  const {data,error}=await sb.from('expenses').insert({shop_id:myShopId, session_id:activeSession.id, description:d, amount:a}).select().single();
+  btn.disabled=false;
+  if(error){ toast(error.message,'err'); return; }
+  expenses.unshift(data); cls('modal-exp'); renderSales(); toast('✅ အသုံးစရိတ် မှတ်သားပြီးပါပြီ','ok');
+}
+
+let cFilt='daily';
+function setCommFilt(f){ cFilt=f; document.querySelectorAll('#tab-comm .fc').forEach(b=>b.classList.toggle('on',b.dataset.c===f)); renderComm(); }
+
+function renderComm(){
+  const dtVal=document.getElementById('comm-date').value;
+  const d=dtVal?new Date(dtVal+'T00:00:00'):new Date();
+  let fTxn=transactions;
+  
+  if(cFilt==='daily') fTxn=transactions.filter(t=>isDay(getT(t),d));
+  else if(cFilt==='weekly') fTxn=transactions.filter(t=>isWk(getT(t),d));
+  else fTxn=transactions.filter(t=>isMo(getT(t),d));
+
+  const tSales=sum(fTxn);
+  const calcC = t => { const items = parseItems(t.items); return items.reduce((s, i) => s + (Number(i.price) * Number(i.qty) * (Number(i.savedRate) || 0.4)), 0); };
+  const tComm=fTxn.reduce((s,t)=>s+(Number(t.commission) || calcC(t)),0);
+  
+  document.getElementById('cs-sales').textContent=fmtK(tSales);
+  document.getElementById('cs-comm').textContent=fmtK(Math.round(tComm));
+
+  if(!fTxn.length){ document.getElementById('comm-list').innerHTML='<div class="empty"><div class="empty-ic">📊</div><div>မှတ်တမ်းမရှိပါ</div></div>'; return; }
+
+  let emps=[...employees.filter(e=>e.status==='active')];
+  if(fTxn.some(t=>!t.employee_id)) emps.push({id:null,name:'Admin / Cashier',color:'var(--gold)'});
+
+  document.getElementById('comm-list').innerHTML=emps.map(emp=>{
+    const eT=fTxn.filter(t=>emp.id===null?!t.employee_id:t.employee_id===emp.id);
+    if(!eT.length) return '';
+    const eS=sum(eT);
+    const eC=eT.reduce((s,t)=>s+(Number(t.commission) || calcC(t)),0);
+    return `<div class="list-row"><div class="lr-icon" style="background:${emp.color};${emp.id===null?'':'color:#111'}">${init(emp.name)}</div><div class="lr-info"><div class="lr-title">${emp.name}</div><div class="lr-sub">${eT.length} ကြိမ် · Sales: ${fmtK(eS)}</div></div><div class="lr-right"><div class="lr-val c-green" style="font-size:18px">${fmtK(Math.round(eC))}</div><div style="font-size:11px;color:var(--t3)">Commission</div></div></div>`;
+  }).join('');
+}
+
+window.onload = boot;
+</script>
+</body>
+</html>
