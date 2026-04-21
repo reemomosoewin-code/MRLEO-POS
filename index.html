@@ -467,7 +467,19 @@ html,body {height: 100dvh; background: #000; color: var(--t);font-family: var(--
       <button class="btn bp" id="btn-cls-sess" onclick="closeSession()">စာရင်းပိတ် သိမ်းဆည်းမည်</button>
     </div>
   </div>
-  
+ <div id="modal-txn-detail" class="mov">
+      <div class="mo">
+          <div class="mo-hdr">
+              <div class="mo-title">ဘောက်ချာ အသေးစိတ်</div>
+              <button class="mo-close" onclick="cls('modal-txn-detail')">✕</button>
+          </div>
+          <div id="txn-detail-content"></div>
+          <div style="margin-top: 20px; display: flex; gap: 10px;">
+              <button class="btn bo" style="flex: 1;" onclick="printReceipt()">🖨️ Print</button>
+              <button class="btn bp" style="flex: 1;" onclick="cls('modal-txn-detail')">ပိတ်မည်</button>
+          </div>
+      </div>
+  </div> 
   <div id="modal-sess-detail" class="mov">
       <div class="mo">
           <div class="mo-hdr"><div class="mo-title">စာရင်း အသေးစိတ်</div><button class="mo-close" onclick="cls('modal-sess-detail')">✕</button></div>
@@ -761,7 +773,58 @@ function printReceipt() {
   window.print();
   prt.classList.add('hidden');
 }
+function viewTxnDetail(txnId) {
+    const txn = transactions.find(t => t.id === txnId);
+    if (!txn) return;
+    
+    // Set this as lastTxn so the "Print" button in the modal works for this specific bill
+    lastTxn = txn; 
 
+    const items = parseItems(txn.items);
+    const empName = getEmpNameForDetail(txn.employee_id);
+    
+    let html = `
+        <div style="background:var(--sf2); padding:16px; border-radius:12px; border:1px solid var(--bd); margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+                <span style="color:var(--t2)">အချိန်:</span>
+                <span class="mono">${new Date(getT(txn)).toLocaleString()}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+                <span style="color:var(--t2)">ဝန်ထမ်း:</span>
+                <span>${empName}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:13px;">
+                <span style="color:var(--t2)">Payment:</span>
+                <span class="${txn.payment_method === 'cash' ? 'c-green' : 'c-blue'}">
+                    ${txn.payment_method === 'cash' ? '💵 Cash' : '📱 QR'}
+                </span>
+            </div>
+        </div>
+        <div style="font-weight:700; margin-bottom:10px; font-size:14px; color:var(--t2);">SERVICES</div>
+    `;
+
+    items.forEach(it => {
+        html += `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--bd);">
+                <div style="flex:1;">
+                    <div style="font-weight:600; font-size:14px;">${it.emoji} ${it.name}</div>
+                    <div style="font-size:12px; color:var(--t3);">${fmtK(it.price)} x ${it.qty}</div>
+                </div>
+                <div class="mono c-gold" style="font-weight:700;">${fmtK(it.price * it.qty)}</div>
+            </div>
+        `;
+    });
+
+    html += `
+        <div style="display:flex; justify-content:space-between; margin-top:16px; padding-top:16px; border-top:2px solid var(--bd);">
+            <span style="font-weight:800; font-size:16px;">စုစုပေါင်း</span>
+            <span class="mono c-gold" style="font-weight:800; font-size:20px;">${fmtK(txn.total)}</span>
+        </div>
+    `;
+
+    document.getElementById('txn-detail-content').innerHTML = html;
+    opn('modal-txn-detail');
+}
 
 // ════════════════════════════════════════
 //  ADMIN: EMPLOYEES & SERVICES 
@@ -891,7 +954,7 @@ function renderSales(){
         const empColor=getEmpColor(t.employee_id);
         const delBtn = curRole === 'admin' ? `<button class="btn bo" style="padding:6px 10px;font-size:11px;margin-top:6px;color:var(--r);border-color:var(--rs)" onclick="delTxn('${t.id}')">ဖျက်မည်</button>` : '';
             
-        return `<div class="list-row">
+        return `<div class="list-row" onclick="viewTxnDetail('${t.id}')" style="cursor:pointer; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='var(--sf)'">
             <div class="lr-icon" style="background:${empColor};font-size:11px">${init(empName)}</div>
             <div class="lr-info">
                 <div class="lr-title">${items.map(i=>i.emoji||'').join('')} ${items.map(i=>i.name).join(', ')}</div>
