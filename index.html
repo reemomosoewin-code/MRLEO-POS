@@ -132,11 +132,14 @@ html,body {height: 100dvh; background: #000; color: var(--t);font-family: var(--
 .c-swatch.sel{border-color:var(--t);box-shadow:0 0 0 2px var(--bd)}
 
 /* PRINT STYLES FOR RECEIPT / VOUCHER */
+@media screen {
+  #print-area { display: none !important; }
+}
 @media print {
-  body * { visibility: hidden; }
-  #print-area, #print-area * { visibility: visible; }
-  #print-area { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; }
-  #app-container, .mov { display: none !important; }
+  html, body { height: auto !important; overflow: visible !important; background: #fff !important; color: #000 !important; }
+  #app-container, .mov, #toast, #loading-state { display: none !important; }
+  #print-area { display: block !important; position: static !important; width: 100%; margin: 0; padding: 0; }
+  #print-area * { visibility: visible !important; }
 }
 #receipt-content { background: #fff; color: #000; padding: 24px 20px; font-family: 'IBM Plex Sans', monospace; max-width: 350px; margin: 0 auto;}
 .rc-shop { font-size: 20px; font-weight: 800; text-align: center; margin-bottom: 4px; }
@@ -152,7 +155,61 @@ html,body {height: 100dvh; background: #000; color: var(--t);font-family: var(--
 </style>
 </head>
 <body>
+<div id="super-admin-dashboard" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);z-index:9999;overflow-y:auto;padding-bottom:40px;max-width:480px;margin:0 auto;left:50%;transform:translateX(-50%);">
+  <!-- SA HEADER -->
+  <div style="background:var(--sf2);padding:16px 14px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;">
+    <div>
+      <div style="color:var(--gold);font-size:11px;font-weight:700;letter-spacing:1px;">👑 MASTER CONTROL</div>
+      <div style="font-size:18px;font-weight:800;">Enterprise Dashboard</div>
+    </div>
+    <button onclick="exitSuperAdmin()" style="background:var(--rs);color:var(--r);border:1px solid var(--r);padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px;">✕ Exit</button>
+  </div>
 
+  <div style="padding:14px;display:flex;flex-direction:column;gap:14px;">
+    <!-- BRANCH SELECTOR -->
+    <div class="card">
+      <div class="ctitle">Branch ရွေးချယ်မည်</div>
+      <div class="fr" id="sa-branch-chips" style="flex-wrap:wrap"></div>
+    </div>
+
+    <!-- DATE FILTER -->
+    <div class="card">
+      <div class="ctitle">ရက်စွဲ စစ်ထုတ်မည်</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div><label style="font-size:11px;color:var(--t2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">From</label><input type="date" id="sa-from" class="fi" onchange="renderSADashboard()"></div>
+        <div><label style="font-size:11px;color:var(--t2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">To</label><input type="date" id="sa-to" class="fi" onchange="renderSADashboard()"></div>
+      </div>
+      <div class="fr">
+        <button class="fc on" onclick="setSARange('today')">ယနေ့</button>
+        <button class="fc" onclick="setSARange('week')">ဒီအပတ်</button>
+        <button class="fc" onclick="setSARange('month')">ဒီလ</button>
+        <button class="fc" onclick="setSARange('year')">ဒီနှစ်</button>
+        <button class="fc" onclick="setSARange('all')">အားလုံး</button>
+      </div>
+    </div>
+
+    <!-- SA LOADING -->
+    <div id="sa-loading" style="text-align:center;padding:40px;color:var(--t3);display:none">
+      <div class="spinner" style="margin:0 auto 16px"></div>
+      <div id="sa-loading-text">Loading branch data...</div>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div id="sa-summary" class="sg"></div>
+
+    <!-- BRANCH COMPARISON -->
+    <div class="card" id="sa-branch-compare"></div>
+
+    <!-- TOP SERVICES -->
+    <div class="card" id="sa-top-services"></div>
+
+    <!-- TOP STYLISTS -->
+    <div class="card" id="sa-top-stylists"></div>
+
+    <!-- RECENT TRANSACTIONS -->
+    <div class="card" id="sa-recent-txns"></div>
+  </div>
+</div>
 <div id="app-container">
 
   <div id="loading-state" class="loader-overlay" style="display:none;">
@@ -287,19 +344,73 @@ html,body {height: 100dvh; background: #000; color: var(--t);font-family: var(--
         </div>
 
         <div id="sv-report" class="hidden">
+           <!-- DATE RANGE FILTER -->
            <div class="card">
-               <div class="ctitle">ရောင်းရငွေ အစီရင်ခံစာ (Sales Analytics)</div>
-               <div class="fr">
-                   <button class="fc on" id="rpt-btn-mo" onclick="setRptMode('monthly')">လအလိုက် (Monthly)</button>
-                   <button class="fc" id="rpt-btn-yr" onclick="setRptMode('yearly')">နှစ်အလိုက် (Yearly)</button>
-               </div>
-               <input type="month" id="rpt-month-input" class="fi" onchange="renderReport()">
-               <input type="number" id="rpt-year-input" class="fi hidden" placeholder="e.g. 2026" onchange="renderReport()">
-               <button class="btn bsu" style="width:100%;margin-top:16px" onclick="exportReportExcel()">📥 Export Report to Excel</button>
+             <div class="ctitle">📊 အစီရင်ခံစာ (Reports)</div>
+             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+               <div><label style="font-size:11px;color:var(--t2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">From Date</label><input type="date" id="rpt-from" class="fi" onchange="renderReport()"></div>
+               <div><label style="font-size:11px;color:var(--t2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">To Date</label><input type="date" id="rpt-to" class="fi" onchange="renderReport()"></div>
+             </div>
+             <div class="fr" style="margin-bottom:12px">
+               <button class="fc on" id="rpt-sc-today" onclick="setRptRange('today')">ယနေ့</button>
+               <button class="fc" id="rpt-sc-week" onclick="setRptRange('week')">ဒီအပတ်</button>
+               <button class="fc" id="rpt-sc-month" onclick="setRptRange('month')">ဒီလ</button>
+               <button class="fc" id="rpt-sc-year" onclick="setRptRange('year')">ဒီနှစ်</button>
+             </div>
+             <!-- STYLIST FILTER -->
+             <div class="f" style="margin-bottom:10px">
+               <label style="font-size:11px;color:var(--t2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Filter by Stylist</label>
+               <select id="rpt-emp-filter" class="fi" onchange="renderReport()">
+                 <option value="all">👥 ဝန်ထမ်းအားလုံး (All Stylists)</option>
+               </select>
+             </div>
+             <button class="btn bsu" style="width:100%" onclick="exportReportExcel()">📥 Export to Excel</button>
            </div>
-           <div id="rpt-summary" style="margin-top:14px"></div>
+           <!-- SUMMARY -->
+           <div id="rpt-summary" style="margin-top:4px"></div>
+           <!-- TOP SERVICES -->
+           <div class="card" id="rpt-top-services" style="margin-top:4px"></div>
+           <!-- TOP STYLISTS -->
+           <div class="card" id="rpt-top-stylists" style="margin-top:4px"></div>
         </div>
 
+      </div>
+
+
+      <div id="tab-exp" class="tab-panel">
+        <!-- FILTER BAR -->
+        <div class="card">
+          <div class="ctitle">💸 အသုံးစရိတ် မှတ်တမ်း (Expense Tracker)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+            <div><label style="font-size:11px;color:var(--t2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">From</label><input type="date" id="exp-from" class="fi" onchange="renderExpTab()"></div>
+            <div><label style="font-size:11px;color:var(--t2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">To</label><input type="date" id="exp-to" class="fi" onchange="renderExpTab()"></div>
+          </div>
+          <div class="fr" style="margin-bottom:0">
+            <button class="fc on" onclick="setExpDateRange('today')">ယနေ့</button>
+            <button class="fc" onclick="setExpDateRange('week')">ဒီအပတ်</button>
+            <button class="fc" onclick="setExpDateRange('month')">ဒီလ</button>
+            <button class="fc" onclick="setExpDateRange('all')">အားလုံး</button>
+          </div>
+        </div>
+        <!-- CATEGORY FILTER -->
+        <div class="fr">
+          <button class="fc on" data-ecat="all" onclick="setExpCatFilter('all')">📋 All</button>
+          <button class="fc" data-ecat="commission" onclick="setExpCatFilter('commission')">💰 Commission</button>
+          <button class="fc" data-ecat="rent" onclick="setExpCatFilter('rent')">🏠 Rent</button>
+          <button class="fc" data-ecat="inventory" onclick="setExpCatFilter('inventory')">🧴 Inventory</button>
+          <button class="fc" data-ecat="supplies" onclick="setExpCatFilter('supplies')">🛒 Supplies</button>
+          <button class="fc" data-ecat="equipment" onclick="setExpCatFilter('equipment')">🔧 Equipment</button>
+          <button class="fc" data-ecat="other" onclick="setExpCatFilter('other')">📝 Other</button>
+        </div>
+        <!-- SUMMARY CARDS -->
+        <div id="exp-summary-cards" class="sg"></div>
+        <!-- ADD BUTTON + LIST -->
+        <div class="card">
+          <div class="ctitle">မှတ်တမ်းများ
+            <button class="btn bsm bo" style="color:var(--r);border-color:var(--rs)" onclick="openExpenseModal()">+ ထည့်မည်</button>
+          </div>
+          <div id="exp-tab-list"></div>
+        </div>
       </div>
 
       <div id="tab-comm" class="tab-panel">
@@ -359,6 +470,7 @@ html,body {height: 100dvh; background: #000; color: var(--t);font-family: var(--
     <nav class="nav">
       <button class="nb on" data-t="pos" onclick="switchTab('pos')"><span class="ni">🏠</span>POS</button>
       <button class="nb admin-only" data-t="sales" onclick="switchTab('sales')" style="display:none"><span class="ni">📊</span>Sales</button>
+      <button class="nb admin-only" data-t="exp" onclick="switchTab('exp')" style="display:none"><span class="ni">💸</span>Expense</button>
       <button class="nb admin-only" data-t="comm" onclick="switchTab('comm')" style="display:none"><span class="ni">💰</span>Comm</button>
       <button class="nb admin-only" data-t="admin" onclick="switchTab('admin')" style="display:none"><span class="ni">⚙️</span>Admin</button>
     </nav>
@@ -453,7 +565,19 @@ html,body {height: 100dvh; background: #000; color: var(--t);font-family: var(--
   <div id="modal-exp" class="mov">
     <div class="mo">
       <div class="mo-hdr"><div class="mo-title">အသုံးစရိတ် ထည့်မည်</div><button class="mo-close" onclick="cls('modal-exp')">✕</button></div>
-      <div class="f"><label>အကြောင်းအရာ</label><input type="text" id="exp-desc" class="fi" placeholder="ဥပမာ - ကော်ဖီဖိုး"></div>
+      <div class="f">
+        <label>အမျိုးအစား (Category)</label>
+        <div class="fr" id="exp-cat-chips" style="flex-wrap:wrap;gap:8px;padding-bottom:4px">
+          <button class="fc on" data-cat="commission" onclick="setExpCat('commission')">💰 Commission</button>
+          <button class="fc" data-cat="rent" onclick="setExpCat('rent')">🏠 Rent &amp; Bills</button>
+          <button class="fc" data-cat="inventory" onclick="setExpCat('inventory')">🧴 Inventory</button>
+          <button class="fc" data-cat="supplies" onclick="setExpCat('supplies')">🛒 Supplies</button>
+          <button class="fc" data-cat="equipment" onclick="setExpCat('equipment')">🔧 Equipment</button>
+          <button class="fc" data-cat="other" onclick="setExpCat('other')">📝 Other</button>
+        </div>
+      </div>
+      <div class="f"><label>ရက်စွဲ (Date)</label><input type="date" id="exp-date" class="fi"></div>
+      <div class="f"><label>အကြောင်းအရာ / မှတ်ချက်</label><input type="text" id="exp-desc" class="fi" placeholder="ဥပမာ - ကော်ဖီဖိုး, လျှပ်စစ်ဘိုး"></div>
       <div class="f"><label>ပမာဏ (Ks)</label><input type="number" id="exp-amt" class="fi mono" placeholder="0"></div>
       <button class="btn bd2" id="btn-sv-exp" style="width:100%;padding:14px;font-size:15px;font-weight:700;margin-top:10px" onclick="saveExp()">ထည့်မည်</button>
     </div>
@@ -634,6 +758,8 @@ async function loadCloudData(){
     document.getElementById('app').classList.add('on');
     
     loadSavedLogo(); setRole(null, null); renderPOS(); opn('app-boot-lock');
+    // Check super admin after app loads
+    checkSuperAdminStatus();
   } catch(e) { 
       document.getElementById('loading-state').style.display = 'none';
       alert('Failed to load data. ' + e.message); 
@@ -703,12 +829,36 @@ function addC(id){
 function updC(id,d){ const it=cart.find(i=>i.id===id); if(!it) return; it.qty+=d; if(it.qty<1) cart=cart.filter(i=>i.id!==id); renderCart(); }
 function cartTot(){ return cart.reduce((s,i)=>s+(Number(i.price)*Number(i.qty)),0); }
 function renderCart(){
-  const tc=cart.reduce((s,i)=>s+i.qty,0); const cb=document.getElementById('cart-badge'); if(tc>0){cb.textContent=tc;cb.classList.remove('hidden');}else cb.classList.add('hidden');
+  const tc=cart.reduce((s,i)=>s+i.qty,0); 
+  const cb=document.getElementById('cart-badge'); 
+  if(tc>0){cb.textContent=tc;cb.classList.remove('hidden');}else cb.classList.add('hidden');
+  
   document.getElementById('cart-total').textContent = fmtK(cartTot());
   document.getElementById('btn-checkout').disabled = cart.length===0;
+  
   const cl=document.getElementById('cart-list');
-  if(!cart.length) cl.innerHTML=`<div class="empty"><div class="empty-ic">💈</div><div style="font-size:13px">ဝန်ဆောင်မှု ရွေးချယ်ပါ</div></div>`;
-  else cl.innerHTML=cart.map(i=>`<div class="cart-item"><div class="ci-emoji">${i.emoji}</div><div class="ci-info"><div class="ci-name">${i.name}</div><div class="ci-price">${fmtK(i.price)}</div></div><div class="qty-ctrl"><button class="qb" onclick="updC('${i.id}',-1)">−</button><div class="qn">${i.qty}</div><button class="qb" onclick="updC('${i.id}',1)">+</button></div></div>`).join('');
+  
+  if(!cart.length) {
+    cl.innerHTML=`<div class="empty"><div class="empty-ic">💈</div><div style="font-size:13px">ဝန်ဆောင်မှု ရွေးချယ်ပါ</div></div>`;
+  } else {
+    cl.innerHTML=cart.map(i=>`
+      <div class="cart-item">
+        <div class="ci-emoji">${i.emoji}</div>
+        <div class="ci-info">
+          <div class="ci-name">${i.name}</div>
+          <div class="ci-price" style="display:flex;align-items:center;gap:8px">
+            ${fmtK(i.price)}
+            <span style="cursor:pointer;font-size:14px;opacity:0.6;transition:opacity 0.2s;" onclick="editItemPrice('${i.id}')" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'" title="ဈေးနှုန်း ပြင်ရန်">✏️</span>
+          </div>
+        </div>
+        <div class="qty-ctrl">
+          <button class="qb" onclick="updC('${i.id}',-1)">−</button>
+          <div class="qn">${i.qty}</div>
+          <button class="qb" onclick="updC('${i.id}',1)">+</button>
+        </div>
+      </div>
+    `).join('');
+  }
 }
 
 function openPayModal(){
@@ -754,7 +904,7 @@ function printReceipt() {
   const emp = employees.find(e => e.id === lastTxn.employee_id);
   const items = parseItems(lastTxn.items);
   const prt = document.getElementById('print-area');
-  
+
   prt.innerHTML = `
     <div id="receipt-content">
       <div class="rc-shop">💈 ${myShopName}</div>
@@ -768,57 +918,67 @@ function printReceipt() {
       <div class="rc-line" style="font-size:11px;color:#555"><span>ဝန်ထမ်း</span><span>${emp?emp.name:'Admin'}</span></div>
     </div>
   `;
-  
+
   prt.classList.remove('hidden');
-  window.print();
-  prt.classList.add('hidden');
+  
+  // A tiny delay ensures the browser paints the HTML before grabbing the print snapshot
+  setTimeout(() => {
+    window.print();
+    prt.classList.add('hidden');
+  }, 300);
 }
 function viewTxnDetail(txnId) {
     const txn = transactions.find(t => t.id === txnId);
     if (!txn) return;
-    
-    // Set this as lastTxn so the "Print" button in the modal works for this specific bill
-    lastTxn = txn; 
-
+    lastTxn = txn;
     const items = parseItems(txn.items);
     const empName = getEmpNameForDetail(txn.employee_id);
-    
+    const calcC = t => { const its=parseItems(t.items); return its.reduce((s,i)=>s+(Number(i.price)*Number(i.qty)*(Number(i.savedRate)||0.4)),0); };
+    const txnComm = Number(txn.commission) || calcC(txn);
+
     let html = `
-        <div style="background:var(--sf2); padding:16px; border-radius:12px; border:1px solid var(--bd); margin-bottom:16px;">
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+        <div style="background:var(--sf2);padding:16px;border-radius:12px;border:1px solid var(--bd);margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;">
                 <span style="color:var(--t2)">အချိန်:</span>
                 <span class="mono">${new Date(getT(txn)).toLocaleString()}</span>
             </div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;">
                 <span style="color:var(--t2)">ဝန်ထမ်း:</span>
-                <span>${empName}</span>
+                <span style="font-weight:600">${empName}</span>
             </div>
-            <div style="display:flex; justify-content:space-between; font-size:13px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;">
                 <span style="color:var(--t2)">Payment:</span>
-                <span class="${txn.payment_method === 'cash' ? 'c-green' : 'c-blue'}">
-                    ${txn.payment_method === 'cash' ? '💵 Cash' : '📱 QR'}
-                </span>
+                <span class="${txn.payment_method==='cash'?'c-green':'c-blue'}">${txn.payment_method==='cash'?'💵 Cash':'📱 QR'}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;">
+                <span style="color:var(--t2)">ကော်မရှင်:</span>
+                <span style="color:var(--r);font-weight:700">${fmtK(Math.round(txnComm))}</span>
             </div>
         </div>
-        <div style="font-weight:700; margin-bottom:10px; font-size:14px; color:var(--t2);">SERVICES</div>
+        <div style="font-weight:700;margin-bottom:10px;font-size:13px;color:var(--t2);text-transform:uppercase;letter-spacing:1px;">SERVICES</div>
     `;
 
     items.forEach(it => {
+        const rate = it.savedRate ? Math.round(it.savedRate*100) : 40;
+        const itemComm = Math.round(Number(it.price)*Number(it.qty)*Number(it.savedRate||0.4));
         html += `
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--bd);">
-                <div style="flex:1;">
-                    <div style="font-weight:600; font-size:14px;">${it.emoji} ${it.name}</div>
-                    <div style="font-size:12px; color:var(--t3);">${fmtK(it.price)} x ${it.qty}</div>
+            <div style="padding:12px 0;border-bottom:1px solid var(--bd);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                    <div style="font-weight:600;font-size:14px;">${it.emoji||''} ${it.name}</div>
+                    <div class="mono c-gold" style="font-weight:700;">${fmtK(it.price * it.qty)}</div>
                 </div>
-                <div class="mono c-gold" style="font-weight:700;">${fmtK(it.price * it.qty)}</div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t3);">
+                    <span>${fmtK(it.price)} × ${it.qty}</span>
+                    <span style="color:var(--r)">Comm ${rate}% = ${fmtK(itemComm)}</span>
+                </div>
             </div>
         `;
     });
 
     html += `
-        <div style="display:flex; justify-content:space-between; margin-top:16px; padding-top:16px; border-top:2px solid var(--bd);">
-            <span style="font-weight:800; font-size:16px;">စုစုပေါင်း</span>
-            <span class="mono c-gold" style="font-weight:800; font-size:20px;">${fmtK(txn.total)}</span>
+        <div style="display:flex;justify-content:space-between;margin-top:16px;padding-top:16px;border-top:2px solid var(--bd);">
+            <span style="font-weight:800;font-size:16px;">စုစုပေါင်း</span>
+            <span class="mono c-gold" style="font-weight:800;font-size:20px;">${fmtK(txn.total)}</span>
         </div>
     `;
 
@@ -891,7 +1051,10 @@ async function delTxn(id) {
 function switchTab(t){
   document.querySelectorAll('.nb').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+t));
-  if(t==='sales'){ setSalesView('current'); } 
+  if(t==='sales'){ setSalesView('current'); }
+  if(t==='exp'){ 
+    if(!document.getElementById('exp-from').value){ setExpDateRange('month'); } else { renderExpTab(); }
+  }
   if(t==='comm'){ if(!document.getElementById('comm-date').value) document.getElementById('comm-date').value=todayStr(); renderComm(); } 
   if(t==='admin') setAdminView('emp');
 }
@@ -900,7 +1063,6 @@ function switchTab(t){
 //  SALES & REPORTS TAB LOGIC
 // ======================================
 let slsView='current';
-let rptMode='monthly';
 
 function setSalesView(v){
   slsView=v;
@@ -915,8 +1077,8 @@ function setSalesView(v){
   if(v==='history') renderHistory(); 
   else if (v==='current') renderSales();
   else if (v==='report') {
-      if(!document.getElementById('rpt-month-input').value) document.getElementById('rpt-month-input').value = todayStr().substring(0,7);
-      renderReport();
+      populateRptEmpFilter();
+      if(!document.getElementById('rpt-from').value){ setRptRange('month'); } else { renderReport(); }
   }
 }
 
@@ -970,21 +1132,35 @@ function renderHistory(){
      document.getElementById('hist-sessions').innerHTML='<div class="empty"><div class="empty-ic">📋</div><div>မှတ်တမ်းမရှိသေးပါ</div></div>'; 
      return; 
   }
-
+  const calcC=t=>{const items=parseItems(t.items);return items.reduce((s,i)=>s+(Number(i.price)*Number(i.qty)*(Number(i.savedRate)||0.4)),0);};
   document.getElementById('hist-sessions').innerHTML = sessions.map(s=>{
     const tX=transactions.filter(t=>t.session_id===s.id);
     const cashTxns=tX.filter(t=>t.payment_method==='cash');
     const qrTxns=tX.filter(t=>t.payment_method==='mmqr');
-    return `<div class="card" style="margin-bottom:12px; cursor:pointer; transition: border-color 0.2s;" onclick="viewSessionDetail('${s.id}')" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--bd)'">
+    const eX=expenses.filter(e=>e.session_id===s.id);
+    const totalExp=eX.reduce((acc,e)=>acc+(e.amount||0),0);
+    const totalComm=tX.reduce((acc,t)=>acc+(Number(t.commission)||calcC(t)),0);
+    const netProfit=sum(tX)-totalExp-totalComm;
+    const openDate=new Date(s.opened_at);
+    const closeDate=s.closed_at?new Date(s.closed_at):null;
+    return `<div class="card" style="margin-bottom:12px;cursor:pointer;transition:border-color 0.2s;" onclick="viewSessionDetail('${s.id}')" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--bd)'">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;border-bottom:1px solid var(--bd);padding-bottom:10px">
-        <span style="font-size:12px;color:var(--t2);font-weight:600">${new Date(s.opened_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</span>
-        <span class="mono c-gold" style="font-weight:700;font-size:16px">${fmtK(sum(tX))}</span>
+        <div>
+          <div style="font-size:13px;font-weight:700">${openDate.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</div>
+          <div style="font-size:11px;color:var(--t3)">${openDate.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}${closeDate?' → '+closeDate.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}):''}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="mono c-gold" style="font-weight:800;font-size:17px">${fmtK(sum(tX))}</div>
+          <div style="font-size:11px;color:var(--g);font-weight:600">Net: ${fmtK(Math.round(netProfit))}</div>
+        </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
-        <div style="color:var(--g)">💵 Cash: <span class="mono">${fmtK(sum(cashTxns))}</span></div>
-        <div style="color:var(--b)">📱 QR: <span class="mono">${fmtK(sum(qrTxns))}</span></div>
-        <div style="color:var(--t2)">ဆိုင်ဖွင့်: ${fmtK(s.opening_cash||0)}</div>
-        <div style="color:${(s.cash_diff||0)<0?'var(--r)':'var(--t2)'}">ကွာဟချက်: ${fmtK(s.cash_diff||0)}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:12px">
+        <div style="color:var(--g)">💵 ${fmtK(sum(cashTxns))}</div>
+        <div style="color:var(--b)">📱 ${fmtK(sum(qrTxns))}</div>
+        <div style="color:var(--t2)">${tX.length} sales</div>
+        <div style="color:var(--r)">Exp: ${fmtK(totalExp)}</div>
+        <div style="color:var(--r)">Comm: ${fmtK(Math.round(totalComm))}</div>
+        <div style="color:${(s.cash_diff||0)<0?'var(--r)':'var(--t2)'}">Diff: ${fmtK(s.cash_diff||0)}</div>
       </div>
     </div>`;
   }).join('');
@@ -993,95 +1169,7 @@ function renderHistory(){
 // ════════════════════════════════════════
 //  REPORTS TAB
 // ════════════════════════════════════════
-function setRptMode(m) {
-    rptMode = m;
-    document.getElementById('rpt-btn-mo').className = 'fc' + (m==='monthly'?' on':'');
-    document.getElementById('rpt-btn-yr').className = 'fc' + (m==='yearly'?' on':'');
-    
-    if (m === 'monthly') {
-        document.getElementById('rpt-month-input').classList.remove('hidden');
-        document.getElementById('rpt-year-input').classList.add('hidden');
-    } else {
-        document.getElementById('rpt-month-input').classList.add('hidden');
-        document.getElementById('rpt-year-input').classList.remove('hidden');
-        if(!document.getElementById('rpt-year-input').value) document.getElementById('rpt-year-input').value = new Date().getFullYear();
-    }
-    renderReport();
-}
-
-function renderReport() {
-    let fTxn = [];
-    let fExp = [];
-    let label = '';
-
-    if (rptMode === 'monthly') {
-        const mo = document.getElementById('rpt-month-input').value; // Format: YYYY-MM
-        if(!mo) return;
-        fTxn = transactions.filter(t => getT(t).startsWith(mo));
-        fExp = expenses.filter(e => getT(e).startsWith(mo));
-        label = new Date(mo + "-01").toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
-    } else {
-        const yr = document.getElementById('rpt-year-input').value; // Format: YYYY
-        if(!yr) return;
-        fTxn = transactions.filter(t => getT(t).startsWith(yr));
-        fExp = expenses.filter(e => getT(e).startsWith(yr));
-        label = yr + " Yearly Report";
-    }
-
-    const tSales = sum(fTxn);
-    const tCash = sum(fTxn.filter(t => t.payment_method === 'cash'));
-    const tQR = sum(fTxn.filter(t => t.payment_method === 'mmqr'));
-    const tExp = fExp.reduce((s, e) => s + (e.amount || 0), 0);
-    const net = tSales - tExp;
-
-    document.getElementById('rpt-summary').innerHTML = `
-        <div style="font-weight:700;color:var(--gold);margin-bottom:12px;font-size:15px;text-align:center">${label}</div>
-        <div class="sg">
-            <div class="sc"><div class="sl">ရောင်းရငွေ (Total Sales)</div><div class="sv c-gold">${fmtK(tSales)}</div></div>
-            <div class="sc"><div class="sl">အသားတင် (Net Profit)</div><div class="sv c-blue">${fmtK(net)}</div></div>
-            <div class="sc"><div class="sl">💵 ငွေသား (Cash)</div><div class="sv c-green">${fmtK(tCash)}</div></div>
-            <div class="sc"><div class="sl">📱 KPay/QR</div><div class="sv" style="color:var(--b)">${fmtK(tQR)}</div></div>
-            <div class="sc" style="grid-column: span 2;"><div class="sl">အသုံးစရိတ် (Expenses)</div><div class="sv c-red">-${fmtK(tExp)}</div></div>
-        </div>
-        <div style="margin-top:16px; font-size:12px; color:var(--t2); text-align:center;">Transactions: ${fTxn.length} | Expenses: ${fExp.length}</div>
-    `;
-}
-
-function exportReportExcel() {
-    const BOM = '\uFEFF';
-    let csv = BOM + 'Type,ID,Date,Time,Total,Payment Method,Employee,Items/Description\n';
-    
-    let mo = document.getElementById('rpt-month-input').value;
-    let yr = document.getElementById('rpt-year-input').value;
-    let prefix = rptMode === 'monthly' ? mo : yr;
-    if(!prefix) return toast('ရက်စွဲရွေးပါ', 'err');
-
-    let fTxn = transactions.filter(t => getT(t).startsWith(prefix));
-    let fExp = expenses.filter(e => getT(e).startsWith(prefix));
-
-    fTxn.forEach(t => {
-        const dt = new Date(getT(t));
-        const empName = getEmpNameForDetail(t.employee_id);
-        const items = parseItems(t.items).map(i => `${i.name} (x${i.qty})`).join('; ');
-        csv += `Sale,${t.id},${dt.toLocaleDateString()},${dt.toLocaleTimeString()},${t.total},${t.payment_method},${empName},"${items}"\n`;
-    });
-
-    fExp.forEach(e => {
-        const dt = new Date(getT(e));
-        csv += `Expense,${e.id},${dt.toLocaleDateString()},${dt.toLocaleTimeString()},-${e.amount},Cash,Admin,"${e.description}"\n`;
-    });
-
-    if(fTxn.length === 0 && fExp.length === 0) return toast('ဒေတာ မရှိပါ', 'err');
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `MRLEO_Report_${prefix}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast('✅ အစီရင်ခံစာ Excel ထုတ်ပြီးပါပြီ', 'ok');
-}
+// [Old report functions replaced above]
 
 // ════════════════════════════════════════
 //  EXPORT FULL EXCEL (FIXED)
@@ -1120,48 +1208,63 @@ function exportFullDatabase() {
 function viewSessionDetail(sId) {
     const sess = sessions.find(s => s.id === sId);
     if(!sess) return;
-
     const tX = transactions.filter(t => t.session_id === sId);
     const eX = expenses.filter(e => e.session_id === sId);
     const cT = tX.filter(t => t.payment_method === 'cash');
     const mT = tX.filter(t => t.payment_method === 'mmqr');
-
-    const totalExp = eX.reduce((s, e) => s + (e.amount || 0), 0);
+    const totalExp = eX.reduce((s,e) => s+(e.amount||0), 0);
+    const calcC = t => { const items=parseItems(t.items); return items.reduce((s,i)=>s+(Number(i.price)*Number(i.qty)*(Number(i.savedRate)||0.4)),0); };
+    const totalComm = tX.reduce((s,t) => s+(Number(t.commission)||calcC(t)), 0);
+    const netProfit = sum(tX) - totalExp - totalComm;
 
     let html = `
         <div style="background:var(--sf2);padding:14px;border-radius:12px;margin-bottom:16px;border:1px solid var(--bd)">
             <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span style="color:var(--t2)">ဖွင့်ချိန်:</span><span class="mono">${new Date(sess.opened_at).toLocaleString()}</span></div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span style="color:var(--t2)">ပိတ်ချိန်:</span><span class="mono">${sess.closed_at ? new Date(sess.closed_at).toLocaleString() : 'Not Closed'}</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:12px;font-size:13px"><span style="color:var(--t2)">ပိတ်ချိန်:</span><span class="mono">${sess.closed_at ? new Date(sess.closed_at).toLocaleString() : 'Not Closed'}</span></div>
             <hr style="border-color:var(--bd);margin:10px 0">
-            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span>Total Sales:</span><span class="mono c-gold">${fmtK(sum(tX))}</span></div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span class="c-green">💵 Cash Sales:</span><span class="mono">${fmtK(sum(cT))}</span></div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span class="c-blue">📱 QR Sales:</span><span class="mono">${fmtK(sum(mT))}</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span>Total Sales:</span><span class="mono c-gold" style="font-weight:700">${fmtK(sum(tX))}</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span class="c-green">💵 Cash:</span><span class="mono">${fmtK(sum(cT))}</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span class="c-blue">📱 QR:</span><span class="mono">${fmtK(sum(mT))}</span></div>
             <hr style="border-color:var(--bd);margin:10px 0">
-            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span style="color:var(--t2)">Opening Cash:</span><span class="mono">${fmtK(sess.opening_cash || 0)}</span></div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span class="c-red">Expenses:</span><span class="mono c-red">-${fmtK(totalExp)}</span></div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span class="c-gold">Expected Cash:</span><span class="mono c-gold">${fmtK(sess.expected_cash || 0)}</span></div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span class="c-green">Actual Cash:</span><span class="mono c-green">${fmtK(sess.actual_cash || 0)}</span></div>
-            <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:bold"><span style="color:var(--t2)">Difference:</span><span class="mono ${(sess.cash_diff||0)<0?'c-red':'c-gold'}">${fmtK(sess.cash_diff || 0)}</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span style="color:var(--t2)">Opening Cash:</span><span class="mono">${fmtK(sess.opening_cash||0)}</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span class="c-red">− Expenses:</span><span class="mono c-red">-${fmtK(totalExp)}</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span class="c-red">− Commission (calculated):</span><span class="mono c-red">-${fmtK(Math.round(totalComm))}</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span class="c-gold">Expected Cash:</span><span class="mono c-gold">${fmtK(sess.expected_cash||0)}</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span class="c-green">Actual Cash:</span><span class="mono c-green">${fmtK(sess.actual_cash||0)}</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:12px;font-size:13px;font-weight:bold"><span style="color:var(--t2)">Cash Diff:</span><span class="mono ${(sess.cash_diff||0)<0?'c-red':'c-gold'}">${fmtK(sess.cash_diff||0)}</span></div>
+            <hr style="border-color:var(--bd);margin:10px 0">
+            <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800;padding-top:4px"><span style="color:var(--g)">🟢 Net Profit:</span><span class="mono" style="color:var(--g)">${fmtK(Math.round(netProfit))}</span></div>
         </div>
     `;
 
     if(eX.length > 0) {
-        html += `<div style="font-weight:bold;margin-bottom:8px;color:var(--r)">အသုံးစရိတ်များ (Expenses)</div>`;
-        html += eX.map(e => `<div style="display:flex;justify-content:space-between;font-size:12px;padding:8px 0;border-bottom:1px solid var(--bd)"><span>${e.description}</span><span class="c-red mono">-${fmtK(e.amount)}</span></div>`).join('');
+        html += `<div style="font-weight:700;margin-bottom:8px;color:var(--r);font-size:13px;text-transform:uppercase;letter-spacing:1px;">💸 Expenses</div>`;
+        html += eX.map(e => {
+            const cat = e.category || 'other';
+            const catIcons = {commission:'💰',rent:'🏠',inventory:'🧴',supplies:'🛒',equipment:'🔧',other:'📝'};
+            return `<div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--bd)">
+                <span>${catIcons[cat]||'📝'} ${e.description}</span>
+                <span class="c-red mono">-${fmtK(e.amount)}</span>
+            </div>`;
+        }).join('');
         html += `<div style="margin-bottom:16px"></div>`;
     }
 
     if(tX.length > 0) {
-        html += `<div style="font-weight:bold;margin-bottom:8px;color:var(--g)">အရောင်းများ (Transactions)</div>`;
+        html += `<div style="font-weight:700;margin-bottom:8px;color:var(--g);font-size:13px;text-transform:uppercase;letter-spacing:1px;">🧾 Transactions (${tX.length})</div>`;
         html += tX.map(t => {
             const items = parseItems(t.items);
             const empName = getEmpNameForDetail(t.employee_id);
-            return `<div style="display:flex;justify-content:space-between;font-size:12px;padding:8px 0;border-bottom:1px solid var(--bd)">
-                <div style="flex:1">
-                    <div style="font-weight:bold">${items.map(i=>i.emoji||'').join('')} ${items.map(i=>i.name).join(', ')}</div>
-                    <div style="color:var(--t3);font-size:10px">${empName} · ${t.payment_method==='cash'?'Cash':'QR'} · ${new Date(getT(t)).toLocaleTimeString()}</div>
+            const tComm = Number(t.commission) || calcC(t);
+            return `<div style="padding:10px 0;border-bottom:1px solid var(--bd)">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                    <div style="font-weight:600;font-size:13px">${items.map(i=>(i.emoji||'')+' '+i.name).join(', ')}</div>
+                    <div class="c-gold mono" style="font-weight:700">${fmtK(t.total)}</div>
                 </div>
-                <div class="c-gold mono" style="font-weight:bold;text-align:right">${fmtK(t.total)}</div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t3)">
+                    <span>${empName} · ${t.payment_method==='cash'?'Cash':'QR'} · ${new Date(getT(t)).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}</span>
+                    <span style="color:var(--r)">Comm: ${fmtK(Math.round(tComm))}</span>
+                </div>
             </div>`;
         }).join('');
     }
@@ -1244,22 +1347,230 @@ async function closeSession(){
   toast('🔒 စာရင်းပိတ်သိမ်းပြီးပါပြီ','ok');
 }
 
+let curExpCat = 'commission';
+function setExpCat(cat) {
+  curExpCat = cat;
+  document.querySelectorAll('#exp-cat-chips .fc').forEach(b => b.classList.toggle('on', b.dataset.cat === cat));
+}
+
 function openExpenseModal(){
-  if(!activeSession){ toast('Session မဖွင့်ရသေးပါ','err'); return; }
-  document.getElementById('exp-desc').value=''; document.getElementById('exp-amt').value=''; opn('modal-exp');
+  curExpCat = 'commission';
+  document.querySelectorAll('#exp-cat-chips .fc').forEach(b => b.classList.toggle('on', b.dataset.cat === 'commission'));
+  document.getElementById('exp-desc').value='';
+  document.getElementById('exp-amt').value='';
+  document.getElementById('exp-date').value=todayStr();
+  opn('modal-exp');
 }
 
 async function saveExp(){
   const d=document.getElementById('exp-desc').value.trim();
   const a=parseFloat(document.getElementById('exp-amt').value)||0;
+  const expDate=document.getElementById('exp-date').value || todayStr();
   if(!d||a<=0){ toast('အချက်အလက် ပြည့်စုံစွာ ထည့်ပါ','err'); return; }
   const btn=document.getElementById('btn-sv-exp'); btn.disabled=true;
-  const {data,error}=await sb.from('expenses').insert({shop_id:myShopId, session_id:activeSession.id, description:d, amount:a}).select().single();
+  const insertData = {
+    shop_id: myShopId,
+    description: d,
+    amount: a,
+    category: curExpCat,
+    expense_date: expDate
+  };
+  if(activeSession) insertData.session_id = activeSession.id;
+  const {data,error}=await sb.from('expenses').insert(insertData).select().single();
   btn.disabled=false;
   if(error){ toast(error.message,'err'); return; }
-  expenses.unshift(data); cls('modal-exp'); renderSales(); toast('✅ အသုံးစရိတ် မှတ်သားပြီးပါပြီ','ok');
+  expenses.unshift(data); cls('modal-exp'); renderSales(); renderExpTab(); toast('✅ အသုံးစရိတ် မှတ်သားပြီးပါပြီ','ok');
 }
 
+// ════════════════════════════════════════
+//  EXPENSE TAB LOGIC
+// ════════════════════════════════════════
+const EXP_CAT_ICONS = {commission:'💰',rent:'🏠',inventory:'🧴',supplies:'🛒',equipment:'🔧',other:'📝'};
+const EXP_CAT_LABELS = {commission:'Commission',rent:'Rent & Bills',inventory:'Inventory',supplies:'Supplies',equipment:'Equipment',other:'Other'};
+let expCatFilter = 'all';
+
+function setExpCatFilter(cat) {
+  expCatFilter = cat;
+  document.querySelectorAll('#tab-exp .fc[data-ecat]').forEach(b => b.classList.toggle('on', b.dataset.ecat === cat));
+  renderExpTab();
+}
+
+function setExpDateRange(r) {
+  const today = new Date(); const t = todayStr();
+  let from = t, to = t;
+  if(r === 'week') { const d = new Date(today); d.setDate(today.getDate() - ((today.getDay()+6)%7)); from = d.toISOString().split('T')[0]; }
+  else if(r === 'month') { from = t.substring(0,7) + '-01'; }
+  else if(r === 'all') { from = '2020-01-01'; }
+  document.getElementById('exp-from').value = from;
+  document.getElementById('exp-to').value = to;
+  renderExpTab();
+}
+
+function getExpDate(e) {
+  return e.expense_date || (e.created_at ? e.created_at.split('T')[0] : todayStr());
+}
+
+function renderExpTab() {
+  const from = document.getElementById('exp-from').value;
+  const to = document.getElementById('exp-to').value;
+  let filtered = expenses;
+  if(from) filtered = filtered.filter(e => getExpDate(e) >= from);
+  if(to) filtered = filtered.filter(e => getExpDate(e) <= to);
+  if(expCatFilter !== 'all') filtered = filtered.filter(e => (e.category || 'other') === expCatFilter);
+
+  const total = filtered.reduce((s,e) => s+(e.amount||0), 0);
+  // Category breakdown
+  const bycat = {};
+  filtered.forEach(e => { const c = e.category||'other'; bycat[c]=(bycat[c]||0)+(e.amount||0); });
+
+  // Summary cards
+  let cardsHtml = `<div class="sc" style="grid-column:span 2;background:var(--rs);border-color:var(--r)"><div class="sl" style="color:var(--r)">စုစုပေါင်း အသုံးစရိတ်</div><div class="sv c-red">${fmtK(total)}</div></div>`;
+  Object.keys(bycat).forEach(cat => {
+    cardsHtml += `<div class="sc"><div class="sl">${EXP_CAT_ICONS[cat]||'📝'} ${EXP_CAT_LABELS[cat]||cat}</div><div class="sv" style="font-size:16px;color:var(--r)">${fmtK(bycat[cat])}</div></div>`;
+  });
+  document.getElementById('exp-summary-cards').innerHTML = cardsHtml;
+
+  // List
+  if(!filtered.length) {
+    document.getElementById('exp-tab-list').innerHTML = '<div class="empty"><div class="empty-ic">💸</div><div>မှတ်တမ်းမရှိပါ</div></div>';
+    return;
+  }
+  document.getElementById('exp-tab-list').innerHTML = filtered.map(e => {
+    const cat = e.category || 'other';
+    const dateStr = getExpDate(e);
+    return `<div class="list-row" style="margin-bottom:8px">
+      <div class="lr-icon" style="background:var(--rs);font-size:18px">${EXP_CAT_ICONS[cat]||'📝'}</div>
+      <div class="lr-info">
+        <div class="lr-title">${e.description}</div>
+        <div class="lr-sub">${EXP_CAT_LABELS[cat]||cat} · ${dateStr}</div>
+      </div>
+      <div class="lr-right"><div class="lr-val c-red">${fmtK(e.amount)}</div></div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════
+//  UPGRADED REPORTS LOGIC
+// ════════════════════════════════════════
+function setRptRange(r) {
+  const today = new Date(); const t = todayStr();
+  let from = t, to = t;
+  if(r==='week'){ const d=new Date(today); d.setDate(today.getDate()-((today.getDay()+6)%7)); from=d.toISOString().split('T')[0]; }
+  else if(r==='month'){ from=t.substring(0,7)+'-01'; }
+  else if(r==='year'){ from=t.substring(0,4)+'-01-01'; }
+  document.getElementById('rpt-from').value=from;
+  document.getElementById('rpt-to').value=to;
+  document.querySelectorAll('[id^="rpt-sc-"]').forEach(b=>b.classList.remove('on'));
+  const btn=document.getElementById('rpt-sc-'+r); if(btn) btn.classList.add('on');
+  renderReport();
+}
+
+function populateRptEmpFilter() {
+  const sel = document.getElementById('rpt-emp-filter');
+  if(!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="all">👥 ဝန်ထမ်းအားလုံး (All Stylists)</option>' +
+    employees.filter(e=>e.status==='active').map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+  if(prev) sel.value = prev;
+}
+
+function renderReport() {
+  const from = document.getElementById('rpt-from').value;
+  const to = document.getElementById('rpt-to').value;
+  const empFilter = document.getElementById('rpt-emp-filter') ? document.getElementById('rpt-emp-filter').value : 'all';
+
+  let fTxn = transactions;
+  let fExp = expenses;
+
+  if(from) fTxn = fTxn.filter(t => getT(t).split('T')[0] >= from);
+  if(to) fTxn = fTxn.filter(t => getT(t).split('T')[0] <= to);
+  if(empFilter !== 'all') fTxn = fTxn.filter(t => t.employee_id === empFilter || (!t.employee_id && empFilter === 'admin'));
+
+  if(from) fExp = fExp.filter(e => getExpDate(e) >= from);
+  if(to) fExp = fExp.filter(e => getExpDate(e) <= to);
+
+  const tSales = sum(fTxn);
+  const tCash = sum(fTxn.filter(t=>t.payment_method==='cash'));
+  const tQR = sum(fTxn.filter(t=>t.payment_method==='mmqr'));
+  const tExp = fExp.reduce((s,e)=>s+(e.amount||0),0);
+  const calcC = t => { const items=parseItems(t.items); return items.reduce((s,i)=>s+(Number(i.price)*Number(i.qty)*(Number(i.savedRate)||0.4)),0); };
+  const tComm = fTxn.reduce((s,t)=>s+(Number(t.commission)||calcC(t)),0);
+  const netProfit = tSales - tExp - tComm;
+
+  const label = from && to ? `${from} မှ ${to}` : 'ရက်စွဲ မရွေးရသေးပါ';
+
+  document.getElementById('rpt-summary').innerHTML = `
+    <div style="font-weight:700;color:var(--gold);margin-bottom:12px;font-size:13px;text-align:center;padding:0 4px">${label}</div>
+    <div class="sg" style="margin-bottom:4px">
+      <div class="sc"><div class="sl">ရောင်းရငွေ</div><div class="sv c-gold">${fmtK(tSales)}</div></div>
+      <div class="sc" style="background:rgba(46,160,67,.05);border-color:var(--g)"><div class="sl" style="color:var(--g)">အသားတင် Profit</div><div class="sv c-green">${fmtK(netProfit)}</div></div>
+      <div class="sc"><div class="sl">💵 ငွေသား</div><div class="sv c-green" style="font-size:16px">${fmtK(tCash)}</div></div>
+      <div class="sc"><div class="sl">📱 KPay/QR</div><div class="sv" style="color:var(--b);font-size:16px">${fmtK(tQR)}</div></div>
+      <div class="sc"><div class="sl">အသုံးစရိတ်</div><div class="sv c-red" style="font-size:16px">${fmtK(tExp)}</div></div>
+      <div class="sc"><div class="sl">ကော်မရှင်</div><div class="sv" style="color:var(--r);font-size:16px">${fmtK(Math.round(tComm))}</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--t3);text-align:center;padding-top:4px">Transactions: ${fTxn.length} | Expenses: ${fExp.length}</div>
+  `;
+
+  // Top Services
+  const svcCount = {};
+  fTxn.forEach(t => { parseItems(t.items).forEach(i => { const k=i.name; if(!svcCount[k]) svcCount[k]={name:i.name,emoji:i.emoji||'✂️',count:0,rev:0}; svcCount[k].count+=Number(i.qty)||1; svcCount[k].rev+=(Number(i.price)||0)*(Number(i.qty)||1); }); });
+  const topSvc = Object.values(svcCount).sort((a,b)=>b.count-a.count).slice(0,5);
+  document.getElementById('rpt-top-services').innerHTML = topSvc.length ? `
+    <div class="ctitle">🏆 အကြိမ်အများဆုံး ဝန်ဆောင်မှုများ</div>
+    ${topSvc.map((s,i)=>`<div class="list-row" style="margin-bottom:8px">
+      <div class="lr-icon" style="background:var(--gold-sub);color:var(--gold);font-size:18px">${s.emoji}</div>
+      <div class="lr-info"><div class="lr-title">${s.name}</div><div class="lr-sub">${s.count} ကြိမ် · ${fmtK(s.rev)}</div></div>
+      <div class="lr-right"><div style="font-size:20px;font-weight:800;color:var(--gold)">#${i+1}</div></div>
+    </div>`).join('')}
+  ` : '<div class="ctitle">🏆 Top Services</div><div class="empty" style="padding:20px"><div>ဒေတာမရှိပါ</div></div>';
+
+  // Top Stylists
+  const stylistData = {};
+  employees.filter(e=>e.status==='active').forEach(e=>{stylistData[e.id]={name:e.name,color:e.color,count:0,rev:0,comm:0};});
+  stylistData['admin']={name:'Admin/Cashier',color:'var(--gold)',count:0,rev:0,comm:0};
+  fTxn.forEach(t=>{
+    const key = t.employee_id || 'admin';
+    if(!stylistData[key]) stylistData[key]={name:'Unknown',color:'#888',count:0,rev:0,comm:0};
+    stylistData[key].count++;
+    stylistData[key].rev+=Number(t.total)||0;
+    stylistData[key].comm+=Number(t.commission)||calcC(t);
+  });
+  const topStylists = Object.values(stylistData).filter(s=>s.count>0).sort((a,b)=>b.rev-a.rev);
+  document.getElementById('rpt-top-stylists').innerHTML = topStylists.length ? `
+    <div class="ctitle">💇 Stylist အကောင်းဆုံး</div>
+    ${topStylists.map(s=>`<div class="list-row" style="margin-bottom:8px">
+      <div class="lr-icon" style="background:${s.color}">${init(s.name)}</div>
+      <div class="lr-info"><div class="lr-title">${s.name}</div><div class="lr-sub">${s.count} clients · Comm: ${fmtK(Math.round(s.comm))}</div></div>
+      <div class="lr-right"><div class="lr-val">${fmtK(s.rev)}</div></div>
+    </div>`).join('')}
+  ` : '';
+}
+
+function exportReportExcel() {
+  const from = document.getElementById('rpt-from').value;
+  const to = document.getElementById('rpt-to').value;
+  if(!from||!to){ toast('ရက်စွဲ ရွေးပါ','err'); return; }
+  let fTxn = transactions.filter(t=>getT(t).split('T')[0]>=from&&getT(t).split('T')[0]<=to);
+  let fExp = expenses.filter(e=>getExpDate(e)>=from&&getExpDate(e)<=to);
+  if(!fTxn.length&&!fExp.length){ toast('ဒေတာမရှိပါ','err'); return; }
+  const BOM='\uFEFF';
+  let csv=BOM+'Type,Date,Time,Total,Payment,Employee,Items,Commission,Category\n';
+  fTxn.forEach(t=>{
+    const dt=new Date(getT(t)); const items=parseItems(t.items).map(i=>`${i.name}(x${i.qty})`).join(';');
+    const calcC=t=>parseItems(t.items).reduce((s,i)=>s+(Number(i.price)*Number(i.qty)*(Number(i.savedRate)||0.4)),0);
+    csv+=`Sale,${dt.toLocaleDateString()},${dt.toLocaleTimeString()},${t.total},${t.payment_method},${getEmpNameForDetail(t.employee_id)},"${items}",${Math.round(Number(t.commission)||calcC(t))},\n`;
+  });
+  fExp.forEach(e=>{ csv+=`Expense,${getExpDate(e)},,${e.amount},,Admin,"${e.description}",,${e.category||'other'}\n`; });
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download=`MRLEO_Report_${from}_to_${to}.csv`; a.click(); URL.revokeObjectURL(url);
+  toast('✅ Export ပြီးပါပြီ','ok');
+}
+
+// ════════════════════════════════════════
+//  COMMISSION TAB
+// ════════════════════════════════════════
 let cFilt='daily';
 function setCommFilt(f){ cFilt=f; document.querySelectorAll('#tab-comm .fc').forEach(b=>b.classList.toggle('on',b.dataset.c===f)); renderComm(); }
 
@@ -1294,6 +1605,198 @@ function renderComm(){
 }
 
 window.onload = boot;
+// ════════════════════════════════════════
+//  MANUAL PRICE EDIT FEATURE
+// ════════════════════════════════════════
+function editItemPrice(id) {
+  const it = cart.find(i => i.id === id);
+  if (!it) return;
+
+  const newPriceStr = prompt(`${it.name} ၏ ဈေးနှုန်းအသစ်ကို ရိုက်ထည့်ပါ (Enter new price):`, it.price);
+
+  if (newPriceStr !== null && newPriceStr.trim() !== '') {
+    const newPrice = parseInt(newPriceStr, 10);
+    if (!isNaN(newPrice) && newPrice >= 0) {
+      it.price = newPrice; 
+      renderCart();        
+    } else {
+      toast('ဈေးနှုန်း မှားယွင်းနေပါသည် (Invalid price)', 'err');
+    }
+  }
+}
+
+
+// ════════════════════════════════════════
+//  👑 SUPER ADMIN LOGIC
+// ════════════════════════════════════════
+let isSuperAdmin = false;
+let sa_shops = [];
+let sa_allTxn = [], sa_allExp = [], sa_allSess = [], sa_allEmp = [], sa_allSvc = [];
+let sa_selectedShop = 'all';
+
+async function checkSuperAdminStatus() {
+  try {
+    const { data: profile } = await sb.from('profiles').select('is_super_admin').eq('id', me.id).single();
+    if (profile && profile.is_super_admin) {
+      isSuperAdmin = true;
+      showSecretDoor();
+    }
+  } catch(err) { console.error("SA check failed:", err); }
+}
+
+function showSecretDoor() {
+  const sec = document.getElementById('av-sec');
+  if(sec && !document.getElementById('btn-super-admin')) {
+    sec.insertAdjacentHTML('afterbegin', `
+      <div style="margin-bottom:16px">
+        <button id="btn-super-admin" onclick="enterSuperAdmin()" style="width:100%;background:linear-gradient(135deg,var(--gold),#b8860b);color:#000;font-weight:800;padding:15px;border-radius:12px;border:none;font-size:15px;letter-spacing:.5px;">
+          👑 ENTER MASTER DASHBOARD
+        </button>
+      </div>
+    `);
+  }
+}
+
+async function enterSuperAdmin() {
+  document.getElementById('app-container').classList.add('hidden');
+  document.getElementById('super-admin-dashboard').classList.remove('hidden');
+  const today = todayStr();
+  document.getElementById('sa-from').value = today.substring(0,7)+'-01';
+  document.getElementById('sa-to').value = today;
+  await loadSuperAdminData();
+}
+
+function exitSuperAdmin() {
+  document.getElementById('super-admin-dashboard').classList.add('hidden');
+  document.getElementById('app-container').classList.remove('hidden');
+}
+
+async function loadSuperAdminData() {
+  document.getElementById('sa-loading').style.display='block';
+  sa_shops=[]; sa_allTxn=[]; sa_allExp=[]; sa_allSess=[]; sa_allEmp=[]; sa_allSvc=[];
+
+  try {
+    // 1. Get permitted shop IDs
+    document.getElementById('sa-loading-text').textContent = 'Loading permitted branches...';
+    const {data: perms} = await sb.from('super_admin_shops').select('shop_id').eq('super_admin_user_id', me.id);
+    if(!perms||!perms.length){ document.getElementById('sa-loading').style.display='none'; toast('No branches assigned','err'); return; }
+    const shopIds = perms.map(p=>p.shop_id);
+
+    // 2. Get shop details
+    const {data: shopData} = await sb.from('shops').select('*').in('id', shopIds);
+    sa_shops = shopData || [];
+
+    // 3. Fetch data per shop
+    for(const shop of sa_shops) {
+      document.getElementById('sa-loading-text').textContent = `Loading ${shop.name}...`;
+      const [txnRes,expRes,sessRes,empRes,svcRes] = await Promise.all([
+        sb.from('transactions').select('*').eq('shop_id',shop.id),
+        sb.from('expenses').select('*').eq('shop_id',shop.id),
+        sb.from('sessions').select('*').eq('shop_id',shop.id),
+        sb.from('employees').select('*').eq('shop_id',shop.id),
+        sb.from('services').select('*').eq('shop_id',shop.id),
+      ]);
+      (txnRes.data||[]).forEach(r=>{r._shop=shop.name;r._shop_id=shop.id;sa_allTxn.push(r);});
+      (expRes.data||[]).forEach(r=>{r._shop=shop.name;r._shop_id=shop.id;sa_allExp.push(r);});
+      (sessRes.data||[]).forEach(r=>{r._shop=shop.name;r._shop_id=shop.id;sa_allSess.push(r);});
+      (empRes.data||[]).forEach(r=>{r._shop=shop.name;sa_allEmp.push(r);});
+      (svcRes.data||[]).forEach(r=>{r._shop=shop.name;sa_allSvc.push(r);});
+    }
+
+    document.getElementById('sa-loading').style.display='none';
+    renderSABranchChips();
+    renderSADashboard();
+  } catch(e) {
+    document.getElementById('sa-loading').style.display='none';
+    toast('Error: '+e.message,'err');
+  }
+}
+
+function renderSABranchChips() {
+  const chips = document.getElementById('sa-branch-chips');
+  chips.innerHTML = `<button class="fc ${sa_selectedShop==='all'?'on':''}" onclick="setSAShop('all')">🏢 All Branches</button>` +
+    sa_shops.map(s=>`<button class="fc ${sa_selectedShop===s.id?'on':''}" onclick="setSAShop('${s.id}')">${s.name}</button>`).join('');
+}
+
+function setSAShop(id) {
+  sa_selectedShop = id;
+  renderSABranchChips();
+  renderSADashboard();
+}
+
+function setSARange(r) {
+  const today = new Date(); const t = todayStr();
+  let from = t, to = t;
+  if(r==='week'){ const d=new Date(today); d.setDate(today.getDate()-((today.getDay()+6)%7)); from=d.toISOString().split('T')[0]; }
+  else if(r==='month'){ from=t.substring(0,7)+'-01'; }
+  else if(r==='year'){ from=t.substring(0,4)+'-01-01'; }
+  else if(r==='all'){ from='2020-01-01'; }
+  document.getElementById('sa-from').value=from;
+  document.getElementById('sa-to').value=to;
+  renderSADashboard();
+}
+
+function renderSADashboard() {
+  const from = document.getElementById('sa-from').value;
+  const to = document.getElementById('sa-to').value;
+
+  let txn = sa_allTxn, exp = sa_allExp;
+  if(sa_selectedShop !== 'all') { txn=txn.filter(t=>t._shop_id===sa_selectedShop); exp=exp.filter(e=>e._shop_id===sa_selectedShop); }
+  if(from) txn=txn.filter(t=>getT(t).split('T')[0]>=from);
+  if(to) txn=txn.filter(t=>getT(t).split('T')[0]<=to);
+  if(from) exp=exp.filter(e=>getExpDate(e)>=from);
+  if(to) exp=exp.filter(e=>getExpDate(e)<=to);
+
+  const tSales=sum(txn);
+  const tExp=exp.reduce((s,e)=>s+(e.amount||0),0);
+  const calcC=t=>{const items=parseItems(t.items);return items.reduce((s,i)=>s+(Number(i.price)*Number(i.qty)*(Number(i.savedRate)||0.4)),0);};
+  const tComm=txn.reduce((s,t)=>s+(Number(t.commission)||calcC(t)),0);
+  const netP=tSales-tExp-tComm;
+
+  // Summary cards
+  document.getElementById('sa-summary').innerHTML=`
+    <div class="sc" style="background:rgba(210,153,34,.05);border-color:var(--gold)"><div class="sl">စုစုပေါင်း အရောင်း</div><div class="sv c-gold">${fmtK(tSales)}</div></div>
+    <div class="sc" style="background:rgba(46,160,67,.05);border-color:var(--g)"><div class="sl">အသားတင် Profit</div><div class="sv c-green">${fmtK(netP)}</div></div>
+    <div class="sc"><div class="sl">အသုံးစရိတ်</div><div class="sv c-red" style="font-size:16px">${fmtK(tExp)}</div></div>
+    <div class="sc"><div class="sl">ကော်မရှင်</div><div class="sv" style="color:var(--r);font-size:16px">${fmtK(Math.round(tComm))}</div></div>
+  `;
+
+  // Branch comparison
+  let branchHtml = '<div class="ctitle">🏢 Branch အလိုက်</div>';
+  sa_shops.forEach(shop=>{
+    const sTxn=sa_allTxn.filter(t=>t._shop_id===shop.id&&(!from||getT(t).split('T')[0]>=from)&&(!to||getT(t).split('T')[0]<=to));
+    const sExp=sa_allExp.filter(e=>e._shop_id===shop.id&&(!from||getExpDate(e)>=from)&&(!to||getExpDate(e)<=to));
+    const sSales=sum(sTxn); const sExp2=sExp.reduce((s,e)=>s+(e.amount||0),0);
+    const sComm=sTxn.reduce((s,t)=>s+(Number(t.commission)||calcC(t)),0);
+    branchHtml+=`<div class="list-row" style="margin-bottom:8px">
+      <div class="lr-icon" style="background:var(--gold-sub);color:var(--gold);font-size:14px">🏪</div>
+      <div class="lr-info"><div class="lr-title">${shop.name}</div><div class="lr-sub">Exp: ${fmtK(sExp2)} · Comm: ${fmtK(Math.round(sComm))}</div></div>
+      <div class="lr-right"><div class="lr-val">${fmtK(sSales)}</div><div style="font-size:11px;color:var(--g)">${fmtK(sSales-sExp2-sComm)} net</div></div>
+    </div>`;
+  });
+  document.getElementById('sa-branch-compare').innerHTML=branchHtml;
+
+  // Top services across all shops
+  const svcCount={};
+  txn.forEach(t=>parseItems(t.items).forEach(i=>{const k=i.name;if(!svcCount[k])svcCount[k]={name:i.name,emoji:i.emoji||'✂️',count:0,rev:0};svcCount[k].count+=Number(i.qty)||1;svcCount[k].rev+=(Number(i.price)||0)*(Number(i.qty)||1);}));
+  const topSvc=Object.values(svcCount).sort((a,b)=>b.count-a.count).slice(0,5);
+  document.getElementById('sa-top-services').innerHTML=`<div class="ctitle">🏆 Top Services (All Branches)</div>`+
+    (topSvc.length?topSvc.map((s,i)=>`<div class="list-row" style="margin-bottom:8px"><div class="lr-icon" style="background:var(--gold-sub);color:var(--gold);font-size:18px">${s.emoji}</div><div class="lr-info"><div class="lr-title">${s.name}</div><div class="lr-sub">${s.count} ကြိမ် · ${fmtK(s.rev)}</div></div><div class="lr-right"><div style="font-size:20px;font-weight:800;color:var(--gold)">#${i+1}</div></div></div>`).join(''):'<div class="empty" style="padding:20px"><div>ဒေတာမရှိပါ</div></div>');
+
+  // Recent transactions
+  const recent=txn.sort((a,b)=>new Date(getT(b))-new Date(getT(a))).slice(0,15);
+  document.getElementById('sa-recent-txns').innerHTML=`<div class="ctitle">🧾 Recent Transactions</div>`+
+    (recent.length?recent.map(t=>{
+      const items=parseItems(t.items);
+      const empId=t.employee_id;
+      const emp=sa_allEmp.find(e=>e.id===empId);
+      return `<div class="list-row" style="margin-bottom:8px">
+        <div class="lr-icon" style="background:var(--sf2);font-size:11px;color:var(--t2)">${t._shop.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
+        <div class="lr-info"><div class="lr-title">${items.map(i=>i.name).join(', ')}</div><div class="lr-sub">${t._shop} · ${emp?emp.name:'Admin'} · ${new Date(getT(t)).toLocaleDateString()}</div></div>
+        <div class="lr-right"><div class="lr-val">${fmtK(t.total)}</div></div>
+      </div>`;
+    }).join(''):'<div class="empty" style="padding:20px"><div>ဒေတာမရှိပါ</div></div>');
+}
 </script>
 </body>
 </html>
