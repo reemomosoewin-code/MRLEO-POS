@@ -226,8 +226,9 @@ html,body {height: 100dvh; background: #000; color: var(--t);font-family: var(--
 
   <div id="pwa-land-loading" style="color:#8b949e;font-size:13px;margin-bottom:16px;">Checking install availability...</div>
 
-  <button onclick="dismissLanding()" style="background:transparent;border:1px solid #2a313d;color:#6e7681;padding:12px 28px;border-radius:8px;font-size:13px;cursor:pointer;">
-    Continue in Browser →
+<button onclick="dismissLanding()" style="background:transparent;border:1px solid #2a313d;color:#6e7681;padding:12px 28px;border-radius:8px;font-size:13px;cursor:pointer;line-height:1.6;">
+    🌐 Open the link in the chrome to download<br>
+    <span style="font-size:11px;color:#8b949e;">(App ကိုဒေါင်းလော့လုပ်ရန် Chrome တွင် ဖွင့်ပါ။)</span>
   </button>
 </div>
 <div id="app-container">
@@ -694,24 +695,13 @@ function isInAppBrowser() {
 
 // 4. Initial Page Load Setup
 window.addEventListener('DOMContentLoaded', () => {
-  
-  // 🚨 TELEGRAM FIX: If in Telegram, completely replace the screen with a massive warning!
   if (isInAppBrowser()) {
-    document.body.innerHTML = `
-      <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100dvh; background:#090b0f; color:#fff; padding:32px; text-align:center; font-family:sans-serif; z-index:999999999; position:fixed; inset:0;">
-        <div style="font-size:70px; margin-bottom:20px;">⚠️</div>
-        <div style="font-size:24px; font-weight:bold; color:#d29922; margin-bottom:16px;">Browser ပိတ်နေပါသည်</div>
-        <div style="font-size:15px; color:#8b949e; line-height:1.8;">
-          Telegram သို့မဟုတ် Viber တွင်း၌ App ကို<br>Install လုပ်၍မရပါ။<br><br>
-          ညာဘက် အပေါ်ထောင့်ရှိ <b>⋮</b> သို့မဟုတ် <b>⋯</b> ကိုနှိပ်ပြီး<br>
-          <span style="display:inline-block; margin-top:16px; background:#d29922; color:#000; padding:12px 24px; border-radius:8px; font-weight:bold; font-size:16px;">"Open in Chrome"</span><br>
-          <div style="margin-top:8px; font-size:13px;">ကိုရွေးချယ်ပေးပါ</div>
-        </div>
-      </div>
-    `;
-    return; // This strictly stops the app, login, and PIN from loading!
+    // Hide floating install bar in Telegram because it won't work
+    const installBar = document.getElementById('pwa-install-bar');
+    if(installBar) installBar.style.display = 'none';
   }
 
+  // Show normal landing screen if not installed
   if(!isAppInstalled()) {
     const landing = document.getElementById('pwa-landing');
     if(landing) landing.style.display = 'flex';
@@ -763,9 +753,8 @@ window.addEventListener('appinstalled', (e) => {
   showInstallSuccess();
 });
 
-// 8. Success Screen with Exit Button
+// 8. Success Screen with Exit Button (Stays full-screen so login doesn't hide it)
 function showInstallSuccess() {
-  // 🚨 INSTALL FIX: Replace the ENTIRE page so the login/PIN screen CANNOT hide this message!
   document.body.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100dvh;background:#090b0f;padding:32px;text-align:center;position:fixed;inset:0;z-index:999999999;font-family:sans-serif;">
       <div style="font-size:90px;margin-bottom:28px;animation:pop .4s ease-out;">✅</div>
@@ -790,6 +779,14 @@ function exitBrowser() {
   setTimeout(() => {
     alert("ကျေးဇူးပြု၍ ဤ Browser ကိုပိတ်ပြီး သင့် Home Screen မှ App ကို ဖွင့်ပါ။");
   }, 400);
+}
+
+// 10. CRITICAL FIX: The missing dismiss function!
+function dismissLanding() {
+  const landing = document.getElementById('pwa-landing');
+  if(landing) {
+    landing.style.display = 'none';
+  }
 }
 // ════════════════════════════════════════
 //  SUPABASE CONFIG
