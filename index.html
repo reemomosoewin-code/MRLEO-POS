@@ -704,31 +704,55 @@ setTimeout(() => {
   if(loading) loading.style.display = 'none';
 }, 3000);
 
+// 1. Catches ALL installs (even from the browser's address bar)
+window.addEventListener('appinstalled', (e) => {
+  console.log('App was successfully installed');
+  document.getElementById('pwa-install-bar').style.display = 'none';
+  showInstallSuccess();
+});
+
+// 2. Your custom install button logic
 async function installPWA() {
   if(!deferredPrompt) return;
   deferredPrompt.prompt();
   const result = await deferredPrompt.userChoice;
   deferredPrompt = null;
   document.getElementById('pwa-install-bar').style.display = 'none';
+  
   if(result.outcome === 'accepted') {
     showInstallSuccess();
   }
 }
 
+// 3. Your updated success screen with the new Exit function
 function showInstallSuccess() {
   const landing = document.getElementById('pwa-landing');
+  landing.style.display = 'flex'; 
   landing.style.background = '#090b0f';
   landing.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px;text-align:center;">
       <div style="font-size:90px;margin-bottom:28px;animation:pop .4s ease-out;">✅</div>
       <div style="font-size:22px;font-weight:800;color:#d29922;margin-bottom:12px;letter-spacing:1px;">ဒေါင်းလော့လုပ်ပြီးပါပြီ။</div>
       <div style="font-size:14px;color:#8b949e;line-height:1.8;margin-bottom:48px;">App သည် သင့် Home Screen တွင်<br>ထည့်သွင်းပြီးပါပြီ။<br><span style="color:#6e7681;font-size:12px;">Home Screen မှ Mr.Leo POS ကိုဖွင့်ပါ။</span></div>
-      <button onclick="document.getElementById('pwa-landing').style.display='none';" style="width:100%;max-width:320px;background:linear-gradient(135deg,#d29922,#b8860b);color:#000;font-weight:800;font-size:17px;padding:18px;border-radius:14px;border:none;box-shadow:0 4px 24px rgba(210,153,34,0.5);margin-bottom:14px;">
-        ✕ Exit &amp; Use from Home Screen
+      
+      <button onclick="exitBrowser()" style="width:100%;max-width:320px;background:linear-gradient(135deg,#d29922,#b8860b);color:#000;font-weight:800;font-size:17px;padding:18px;border-radius:14px;border:none;box-shadow:0 4px 24px rgba(210,153,34,0.5);margin-bottom:14px;">
+        ✕ Exit & Use from Home Screen
       </button>
     </div>
     <style>@keyframes pop{0%{transform:scale(0)}80%{transform:scale(1.2)}100%{transform:scale(1)}}</style>
   `;
+}
+
+// 4. The new function to handle exiting safely
+function exitBrowser() {
+  // Try to close the browser tab automatically
+  window.open('', '_self', ''); 
+  window.close();
+  
+  // Fallback: If the browser blocks it, ask the user to close it manually
+  setTimeout(() => {
+    alert("ကျေးဇူးပြု၍ ဤ Browser ကိုပိတ်ပြီး သင့် Home Screen မှ App ကို ဖွင့်ပါ။");
+  }, 400);
 }
 
 function dismissLanding() {
