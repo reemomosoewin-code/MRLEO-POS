@@ -6,6 +6,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MR.LEO POS">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#090b0f">
 <title>MR.LEO POS - Professional</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Myanmar:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Playfair+Display:wght@800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -639,7 +642,42 @@ html,body {height: 100dvh; background: #000; color: var(--t);font-family: var(--
   </div>
 
 </div>
+<!-- PWA INSTALL BUTTON -->
+<div id="pwa-install-bar" style="display:none;position:fixed;bottom:74px;left:50%;transform:translateX(-50%);z-index:99999;width:calc(100% - 28px);max-width:452px;">
+  <button onclick="installPWA()" style="width:100%;background:linear-gradient(135deg,#d29922,#b8860b);color:#000;font-weight:800;font-size:15px;padding:14px;border-radius:12px;border:none;box-shadow:0 4px 20px rgba(210,153,34,0.4);letter-spacing:.5px;">
+    📲 Install App
+  </button>
+</div>
 
+<script>
+// PWA SERVICE WORKER + INSTALL
+let deferredPrompt = null;
+
+if('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js');
+  });
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('pwa-install-bar').style.display = 'block';
+});
+
+async function installPWA() {
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const result = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('pwa-install-bar').style.display = 'none';
+}
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('pwa-install-bar').style.display = 'none';
+  deferredPrompt = null;
+});
+</script>
 <div id="print-area" class="hidden"></div>
 <div id="toast"></div>
 
