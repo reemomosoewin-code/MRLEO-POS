@@ -218,7 +218,7 @@ html,body {height: 100dvh; background: #000; color: var(--t);font-family: var(--
   <img src="icon-512.png" style="width:120px;height:120px;border-radius:28px;margin-bottom:32px;box-shadow:0 8px 32px rgba(210,153,34,0.3)">
   <div style="font-size:28px;font-weight:800;color:#d29922;letter-spacing:2px;margin-bottom:6px;">MR.LEO</div>
   <div style="font-size:18px;font-weight:300;color:#e6edf3;letter-spacing:4px;margin-bottom:8px;">POS SYSTEM</div>
-  <div style="font-size:13px;color:#8b949e;margin-bottom:48px;">Professional Barbershop Management</div>
+ 
 
   <button id="pwa-land-install-btn" onclick="installPWA()" style="display:none;width:100%;max-width:320px;background:linear-gradient(135deg,#d29922,#b8860b);color:#000;font-weight:800;font-size:17px;padding:18px;border-radius:14px;border:none;box-shadow:0 4px 24px rgba(210,153,34,0.5);margin-bottom:16px;letter-spacing:.5px;">
     📲 Install App
@@ -716,15 +716,18 @@ async function installPWA() {
 }
 
 function showInstallSuccess() {
-  document.getElementById('pwa-landing').innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:32px;text-align:center;">
-      <div style="font-size:80px;margin-bottom:24px;">✅</div>
-      <div style="font-size:22px;font-weight:800;color:#d29922;margin-bottom:12px;">ဒေါင်းလော့လုပ်ပြီးပါပြီ။</div>
-      <div style="font-size:14px;color:#8b949e;margin-bottom:48px;">App သည် သင့် Home Screen တွင် ထည့်သွင်းပြီးပါပြီ။</div>
-      <button onclick="window.close()" style="width:100%;max-width:320px;background:linear-gradient(135deg,#d29922,#b8860b);color:#000;font-weight:800;font-size:17px;padding:18px;border-radius:14px;border:none;box-shadow:0 4px 24px rgba(210,153,34,0.5);letter-spacing:.5px;">
-        ✕ Exit
+  const landing = document.getElementById('pwa-landing');
+  landing.style.background = '#090b0f';
+  landing.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px;text-align:center;">
+      <div style="font-size:90px;margin-bottom:28px;animation:pop .4s ease-out;">✅</div>
+      <div style="font-size:22px;font-weight:800;color:#d29922;margin-bottom:12px;letter-spacing:1px;">ဒေါင်းလော့လုပ်ပြီးပါပြီ။</div>
+      <div style="font-size:14px;color:#8b949e;line-height:1.8;margin-bottom:48px;">App သည် သင့် Home Screen တွင်<br>ထည့်သွင်းပြီးပါပြီ။<br><span style="color:#6e7681;font-size:12px;">Home Screen မှ Mr.Leo POS ကိုဖွင့်ပါ။</span></div>
+      <button onclick="document.getElementById('pwa-landing').style.display='none';" style="width:100%;max-width:320px;background:linear-gradient(135deg,#d29922,#b8860b);color:#000;font-weight:800;font-size:17px;padding:18px;border-radius:14px;border:none;box-shadow:0 4px 24px rgba(210,153,34,0.5);margin-bottom:14px;">
+        ✕ Exit &amp; Use from Home Screen
       </button>
     </div>
+    <style>@keyframes pop{0%{transform:scale(0)}80%{transform:scale(1.2)}100%{transform:scale(1)}}</style>
   `;
 }
 
