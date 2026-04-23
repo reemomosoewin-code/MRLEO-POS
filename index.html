@@ -697,20 +697,31 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('pwa-landing').style.display = 'flex';
   }
 
-  const installBar = document.getElementById('pwa-install-bar');
-  if (isInAppBrowser() && installBar) {
-    // Show Telegram warning instead of install button
-    installBar.style.display = 'block';
-    installBar.innerHTML = `
-      <div style="background:var(--sf2); border:1px solid #d29922; border-radius:12px; padding:16px; text-align:center; width: 100%; box-sizing: border-box;">
-        <div style="color:#d29922; font-size:18px; margin-bottom:8px;">⚠️ Browser ပိတ်နေပါသည်</div>
-        <div style="color:#8b949e; font-size:13px; line-height:1.6;">
-          App ကို Install လုပ်ရန် အပေါ်ထောင့်ရှိ <b>⋮</b> သို့မဟုတ် <b>⋯</b> ကိုနှိပ်ပြီး<br>
-          <span style="color:#fff;font-weight:bold;">"Open in Chrome"</span> ကိုရွေးပါ။
+  if (isInAppBrowser()) {
+    // Hide floating bar to avoid confusion
+    const installBar = document.getElementById('pwa-install-bar');
+    if(installBar) installBar.style.display = 'none';
+
+    // Show massive warning directly on the center of the Landing Screen
+    const loadingText = document.getElementById('pwa-land-loading');
+    if(loadingText) {
+      loadingText.style.display = 'block';
+      loadingText.innerHTML = `
+        <div style="background:rgba(210,153,34,0.1); border:1px solid #d29922; border-radius:12px; padding:20px; text-align:center; width: 100%; max-width:320px; margin: 0 auto 20px auto;">
+          <div style="color:#d29922; font-size:18px; font-weight:bold; margin-bottom:12px;">⚠️ ဤနေရာတွင် ဖွင့်၍မရပါ</div>
+          <div style="color:#e6edf3; font-size:14px; line-height:1.6;">
+            Telegram / Viber တွင်း၌ App ကို အသုံးပြု၍မရပါ။<br><br>
+            ညာဘက် အပေါ်ထောင့်ရှိ <b>⋮</b> သို့မဟုတ် <b>⋯</b> ကိုနှိပ်ပြီး<br>
+            <span style="display:inline-block; margin-top:8px; background:#d29922; color:#000; padding:6px 12px; border-radius:6px; font-weight:bold;">"Open in Chrome"</span><br>
+            ကိုရွေးချယ်ပေးပါ။
+          </div>
         </div>
-      </div>
-    `;
-    installBar.onclick = null;
+      `;
+    }
+    
+    // Hide the "Continue" button so they don't get stuck in a frozen Telegram screen
+    const continueBtn = document.querySelector('button[onclick="dismissLanding()"]');
+    if(continueBtn) continueBtn.style.display = 'none';
   }
 });
 
@@ -729,10 +740,12 @@ window.addEventListener('beforeinstallprompt', (e) => {
   if(installBar && !isInAppBrowser()) installBar.style.display = 'block';
 });
 
-// Hide loading text if no prompt after 3s
+// Hide loading text if no prompt after 3s (ONLY if they are NOT in Telegram)
 setTimeout(() => {
-  const loading = document.getElementById('pwa-land-loading');
-  if(loading) loading.style.display = 'none';
+  if (!isInAppBrowser()) {
+    const loading = document.getElementById('pwa-land-loading');
+    if(loading) loading.style.display = 'none';
+  }
 }, 3000);
 
 // 6. Install Button Click Function
@@ -783,7 +796,6 @@ function exitBrowser() {
     alert("ကျေးဇူးပြု၍ ဤ Browser ကိုပိတ်ပြီး သင့် Home Screen မှ App ကို ဖွင့်ပါ။");
   }, 400);
 }
-
 // ════════════════════════════════════════
 //  SUPABASE CONFIG
 // ════════════════════════════════════════
