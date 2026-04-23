@@ -711,8 +711,21 @@ async function installPWA() {
   deferredPrompt = null;
   document.getElementById('pwa-install-bar').style.display = 'none';
   if(result.outcome === 'accepted') {
-    dismissLanding();
+    showInstallSuccess();
   }
+}
+
+function showInstallSuccess() {
+  document.getElementById('pwa-landing').innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:32px;text-align:center;">
+      <div style="font-size:80px;margin-bottom:24px;">✅</div>
+      <div style="font-size:22px;font-weight:800;color:#d29922;margin-bottom:12px;">ဒေါင်းလော့လုပ်ပြီးပါပြီ။</div>
+      <div style="font-size:14px;color:#8b949e;margin-bottom:48px;">App သည် သင့် Home Screen တွင် ထည့်သွင်းပြီးပါပြီ။</div>
+      <button onclick="window.close()" style="width:100%;max-width:320px;background:linear-gradient(135deg,#d29922,#b8860b);color:#000;font-weight:800;font-size:17px;padding:18px;border-radius:14px;border:none;box-shadow:0 4px 24px rgba(210,153,34,0.5);letter-spacing:.5px;">
+        ✕ Exit
+      </button>
+    </div>
+  `;
 }
 
 function dismissLanding() {
