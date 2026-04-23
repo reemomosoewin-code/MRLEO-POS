@@ -158,8 +158,7 @@ html,body {height: 100dvh; background: #000; color: var(--t);font-family: var(--
 </style>
 </head>
 <body>
-<div id="super-admin-dashboard" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);z-index:9999;overflow-y:auto;padding-bottom:40px;max-width:480px;margin:0 auto;left:50%;transform:translateX(-50%);">
-  <!-- SA HEADER -->
+<div id="super-admin-dashboard" class="hidden" style="position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;height:100%;background:var(--bg);z-index:9999;overflow-y:auto;padding-bottom:40px;max-width:480px;margin:0 auto;">
   <div style="background:var(--sf2);padding:16px 14px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;">
     <div>
       <div style="color:var(--gold);font-size:11px;font-weight:700;letter-spacing:1px;">👑 MASTER CONTROL</div>
@@ -753,32 +752,28 @@ window.addEventListener('appinstalled', (e) => {
   showInstallSuccess();
 });
 
-// 8. Success Screen with Exit Button (Stays full-screen so login doesn't hide it)
+// 8. Success Screen - Safe version that doesn't destroy the app
 function showInstallSuccess() {
-  document.body.innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100dvh;background:#090b0f;padding:32px;text-align:center;position:fixed;inset:0;z-index:999999999;font-family:sans-serif;">
-      <div style="font-size:90px;margin-bottom:28px;animation:pop .4s ease-out;">✅</div>
-      <div style="font-size:24px;font-weight:800;color:#d29922;margin-bottom:12px;letter-spacing:1px;">ဒေါင်းလော့လုပ်ပြီးပါပြီ။</div>
-      <div style="font-size:15px;color:#8b949e;line-height:1.8;margin-bottom:48px;">
-        App သည် သင့် Home Screen တွင်<br>ထည့်သွင်းပြီးပါပြီ။<br><br>
-        <span style="color:#6e7681;font-size:13px;">ကျေးဇူးပြု၍ ဤနေရာမှ ထွက်ပြီး သင့်ဖုန်း၏<br>Home Screen မှ Mr.Leo POS ကိုဖွင့်ပါ။</span>
-      </div>
-      
-      <button onclick="exitBrowser()" style="width:100%;max-width:320px;background:linear-gradient(135deg,#d29922,#b8860b);color:#000;font-weight:800;font-size:17px;padding:18px;border-radius:14px;border:none;box-shadow:0 4px 24px rgba(210,153,34,0.5);">
-        ✕ ချက်ချင်း ထွက်မည် (Exit)
-      </button>
+  let overlay = document.getElementById('install-success-overlay');
+  if(!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'install-success-overlay';
+    document.body.appendChild(overlay);
+  }
+  overlay.style.cssText = 'position:fixed;inset:0;background:#090b0f;z-index:999999999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;font-family:sans-serif;';
+  overlay.innerHTML = `
+    <div style="font-size:90px;margin-bottom:28px;animation:pop .4s ease-out;">✅</div>
+    <div style="font-size:24px;font-weight:800;color:#d29922;margin-bottom:12px;letter-spacing:1px;">ဒေါင်းလော့လုပ်ပြီးပါပြီ။</div>
+    <div style="font-size:15px;color:#8b949e;line-height:1.8;margin-bottom:48px;">
+      App သည် သင့် Home Screen တွင်<br>ထည့်သွင်းပြီးပါပြီ။<br><br>
+      <span style="color:#6e7681;font-size:13px;">Home Screen မှ Mr.Leo POS icon ကိုနှိပ်၍ ဖွင့်ပါ။</span>
     </div>
+    <button onclick="document.getElementById('install-success-overlay').style.display='none'"
+      style="width:100%;max-width:320px;background:linear-gradient(135deg,#d29922,#b8860b);color:#000;font-weight:800;font-size:17px;padding:18px;border-radius:14px;border:none;box-shadow:0 4px 24px rgba(210,153,34,0.5);">
+      ✕ ပိတ်မည် (Close)
+    </button>
     <style>@keyframes pop{0%{transform:scale(0)}80%{transform:scale(1.2)}100%{transform:scale(1)}}</style>
   `;
-}
-
-// 9. Exit Function Workaround
-function exitBrowser() {
-  window.open('', '_self', ''); 
-  window.close();
-  setTimeout(() => {
-    alert("ကျေးဇူးပြု၍ ဤ Browser ကိုပိတ်ပြီး သင့် Home Screen မှ App ကို ဖွင့်ပါ။");
-  }, 400);
 }
 
 // 10. CRITICAL FIX: The missing dismiss function!
@@ -1047,7 +1042,15 @@ function printReceipt() {
   if(!lastTxn) return;
   const emp = employees.find(e => e.id === lastTxn.employee_id);
   const items = parseItems(lastTxn.items);
-  const prt = document.getElementById('print-area');
+
+  // Create print-area if it doesn't exist
+  let prt = document.getElementById('print-area');
+  if(!prt) {
+    prt = document.createElement('div');
+    prt.id = 'print-area';
+    prt.style.display = 'none';
+    document.body.appendChild(prt);
+  }
 
   prt.innerHTML = `
     <div id="receipt-content">
@@ -1063,12 +1066,11 @@ function printReceipt() {
     </div>
   `;
 
-  prt.classList.remove('hidden');
-  
-  // A tiny delay ensures the browser paints the HTML before grabbing the print snapshot
+  prt.style.display = 'block';
+
   setTimeout(() => {
     window.print();
-    prt.classList.add('hidden');
+    prt.style.display = 'none';
   }, 300);
 }
 function viewTxnDetail(txnId) {
