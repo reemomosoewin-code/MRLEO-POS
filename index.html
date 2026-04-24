@@ -665,6 +665,9 @@ html,body {height: 100dvh; background: #000; color: var(--t);font-family: var(--
   </button>
 </div>
 
+<div id="toast"></div>
+<div id="print-area" class="hidden"></div>
+
 <script>
 
 // ==========================================
@@ -1182,13 +1185,34 @@ async function delSvc(){
   if(!confirm('ဖျက်ပစ်မည်လား?'))return; await sb.from('services').delete().eq('id',id); services=services.filter(s=>s.id!==id); cls('modal-svc'); renderSvcAdmin(); renderPOS(); toast('ဖျက်ပြီးပါပြီ', 'ok');
 }
 
-async function delTxn(id) {
-  if(!confirm('ဤအရောင်းဘောက်ချာကို အပြီးတိုင် ဖျက်ပစ်မည်လား? (Are you sure you want to delete this?)')) return;
-  toast('ဖျက်နေပါသည်...', 'ok');
-  const { error } = await sb.from('transactions').delete().eq('id', id);
-  if (error) { toast('Error: ' + error.message, 'err'); return; }
-  transactions = transactions.filter(t => t.id !== id);
-  renderSales(); toast('🗑️ ဖျက်ပစ်လိုက်ပါပြီ', 'ok');
+async function delTxn(event, id) {
+  try {
+    // 1. Stop the row behind it from opening the voucher
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
+    // 2. Ask for confirmation
+    const isSure = confirm('ဤအရောင်းဘောက်ချာကို အပြီးတိုင် ဖျက်ပစ်မည်လား?');
+    if (!isSure) return;
+
+    // 3. OPTIMISTIC UPDATE: Instantly remove it from the screen so it feels lightning fast!
+    transactions = transactions.filter(t => String(t.id) !== String(id));
+    renderSales(); 
+    toast('🗑️ ဖျက်ပစ်လိုက်ပါပြီ', 'ok');
+
+    // 4. Delete it from the Supabase database in the background
+    const { error } = await sb.from('transactions').delete().eq('id', id);
+
+    // 5. Catch any secret database errors
+    if (error) {
+      alert("Database Error: " + error.message);
+    }
+    
+  } catch (err) {
+    alert("System Error: " + err.message);
+  }
 }
 
 // ════════════════════════════════════════
