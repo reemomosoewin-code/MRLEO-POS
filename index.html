@@ -1284,7 +1284,7 @@ function renderSales(){
         const items=parseItems(t.items); 
         const empName=getEmpNameForDetail(t.employee_id); 
         const empColor=getEmpColor(t.employee_id);
-        const delBtn = curRole === 'admin' ? `<button class="btn bo" style="padding:6px 10px;font-size:11px;margin-top:6px;color:var(--r);border-color:var(--rs)" onclick="delTxn('${t.id}')">ဖျက်မည်</button>` : '';
+        const delBtn = curRole === 'admin' ? `<button class="btn bo" style="padding:6px 10px;font-size:11px;margin-top:6px;color:var(--r);border-color:var(--rs)" onclick="delTxn(event, '${t.id}')">ဖျက်မည်</button>` : '';
             
         return `<div class="list-row" onclick="viewTxnDetail('${t.id}')" style="cursor:pointer; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='var(--sf)'">
             <div class="lr-icon" style="background:${empColor};font-size:11px">${init(empName)}</div>
