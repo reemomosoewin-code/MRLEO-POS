@@ -23,8 +23,8 @@
   --rad:12px;--font:'IBM Plex Sans','Noto Sans Myanmar',sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body {height: 100dvh; background: #000; color: var(--t);font-family: var(--font);font-size: 14px;overflow: hidden;}
-#app-container {height: 100dvh;max-width: 480px; margin: 0 auto;background: var(--bg);position: relative;display: flex;flex-direction: column;box-shadow: 0 0 20px rgba(0,0,0,0.8);border-left: 1px solid var(--bd);border-right: 1px solid var(--bd);}
+html,body {height: 100%; background: #000; color: var(--t);font-family: var(--font);font-size: 14px;overflow: hidden; position: fixed; inset: 0; width: 100%;}
+#app-container {height: 100%; max-width: 480px; margin: 0 auto;background: var(--bg);position: relative;display: flex;flex-direction: column;box-shadow: 0 0 20px rgba(0,0,0,0.8);border-left: 1px solid var(--bd);border-right: 1px solid var(--bd); overflow: hidden;}
 .hidden{display:none!important}
 .mono{font-family:'IBM Plex Sans',monospace}
 .c-gold{color:var(--gold)}.c-green{color:var(--g)}.c-blue{color:var(--b)}.c-red{color:var(--r)}
@@ -182,11 +182,11 @@ html,body {height: 100dvh; background: #000; color: var(--t);font-family: var(--
         <div><label style="font-size:11px;color:var(--t2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">To</label><input type="date" id="sa-to" class="fi" onchange="renderSADashboard()"></div>
       </div>
       <div class="fr">
-        <button class="fc on" onclick="setSARange('today')">ယနေ့</button>
-        <button class="fc" onclick="setSARange('week')">ဒီအပတ်</button>
-        <button class="fc" onclick="setSARange('month')">ဒီလ</button>
-        <button class="fc" onclick="setSARange('year')">ဒီနှစ်</button>
-        <button class="fc" onclick="setSARange('all')">အားလုံး</button>
+        <button class="fc on" id="sa-btn-today" onclick="setSARange('today')">ယနေ့</button>
+        <button class="fc" id="sa-btn-week" onclick="setSARange('week')">ဒီအပတ်</button>
+        <button class="fc" id="sa-btn-month" onclick="setSARange('month')">ဒီလ</button>
+        <button class="fc" id="sa-btn-year" onclick="setSARange('year')">ဒီနှစ်</button>
+        <button class="fc" id="sa-btn-all" onclick="setSARange('all')">အားလုံး</button>
       </div>
     </div>
 
@@ -1903,6 +1903,12 @@ function setSARange(r) {
   else if(r==='all'){ from='2020-01-01'; }
   document.getElementById('sa-from').value=from;
   document.getElementById('sa-to').value=to;
+  
+  // 👉 NEW FIX: Remove gold from all buttons, add to the clicked one
+  document.querySelectorAll('[id^="sa-btn-"]').forEach(b => b.classList.remove('on'));
+  const btn = document.getElementById('sa-btn-' + r); 
+  if(btn) btn.classList.add('on');
+
   renderSADashboard();
 }
 
