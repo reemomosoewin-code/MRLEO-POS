@@ -2,14 +2,13 @@
 //  auth.js — Boot, login, logout, cloud data loading
 // ============================================================
 import * as C from './config.js';
-import { toast } from './utils.js';
-import { renderPOS } from './pos.js';
-import { renderSales } from './sales.js';
-import { opn, cls } from './utils.js';
+import { toast, opn, cls, getT } from './utils.js';
+import { renderPOS }             from './pos.js';
+import { renderSales }           from './sales.js';
 import { checkSuperAdminStatus } from './superadmin.js';
-import { loadSavedLogo } from './admin.js';
-import { setRole } from './pin.js';
-import { startClock } from './ui.js';
+import { loadSavedLogo }         from './admin.js';
+import { setRole }               from './pin.js';
+import { startClock }            from './ui.js';
 
 // ── Supabase paginated fetch ───────────────────────────────────
 export async function fetchAllData(tableName, shopId) {
@@ -105,7 +104,6 @@ export async function loadCloudData() {
     const allTxn  = await fetchAllData('transactions', C.myShopId);
     const allExp  = await fetchAllData('expenses', C.myShopId);
 
-    const { getT } = await import('./utils.js');
     C.setSessions(allSess.filter(s => s.closed_at !== null).sort((a, b) => new Date(getT(b)) - new Date(getT(a))));
     C.setTransactions(allTxn.sort((a, b) => new Date(getT(b)) - new Date(getT(a))));
     C.setExpenses(allExp.sort((a, b) => new Date(getT(b)) - new Date(getT(a))));
