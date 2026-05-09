@@ -2,14 +2,13 @@
 //  session.js — Open / close sessions, boot check
 // ============================================================
 import * as C from './config.js';
-import { toast, opn, cls, sum, fmtK, getT } from './utils.js';
-import { renderSales }                        from './sales.js';
-import { openPinOverlay }                     from './pin.js';
+import { toast, opn, cls, sum, fmtK } from './utils.js';
+import { renderSales }    from './sales.js';
+import { openPinOverlay, setRole, blUpd, updPD } from './pin.js';
 
 export function checkSession() {
   if (!C.activeSession) {
     opn('session-gate');
-    const { setRole } = require('./pin.js');
     setRole({ name: 'Admin', id: 'admin', color: 'var(--gold)' }, 'admin');
   } else {
     cls('session-gate');
@@ -24,9 +23,9 @@ export async function openSession() {
   const btn = document.getElementById('btn-open-sess');
   btn.disabled = true;
   const { data, error } = await C.sb.from('sessions').insert({
-    shop_id: C.myShopId,
+    shop_id:      C.myShopId,
     opening_cash: amt,
-    opened_at: new Date().toISOString(),
+    opened_at:    new Date().toISOString(),
   }).select().single();
   btn.disabled = false;
   if (error) { toast('Error: ' + error.message, 'err'); return; }
@@ -62,20 +61,21 @@ export async function closeSession() {
   }).eq('id', C.activeSession.id);
   btn.disabled = false; btn.textContent = 'စာရင်းပိတ် သိမ်းဆည်းမည်';
   if (error) { toast('Error: ' + error.message, 'err'); return; }
-  // Update local state
-  C.setSessions([{ ...C.activeSession, closed_at: new Date().toISOString(), expected_cash: exp, actual_cash: act, cash_diff: act - exp }, ...C.sessions]);
+  C.setSessions([{
+    ...C.activeSession,
+    closed_at: new Date().toISOString(),
+    expected_cash: exp, actual_cash: act, cash_diff: act - exp
+  }, ...C.sessions]);
   C.setActiveSession(null);
   cls('modal-close-sess');
-  // Re-lock to PIN screen
-  const { blBuf, setBlBuf } = await import('./config.js');
+  // Reset PIN buffers and re-lock
   C.setBlBuf(''); C.setPBuf('');
-  const { blUpd, updPD } = await import('./pin.js');
   blUpd(); updPD();
   opn('app-boot-lock');
   toast('🔒 စာရင်းပိတ်သိမ်းပြီးပါပြီ', 'ok');
 }
 
-window.openSession          = openSession;
-window.openSessionGate      = openSessionGate;
+window.openSession           = openSession;
+window.openSessionGate       = openSessionGate;
 window.openCloseSessionModal = openCloseSessionModal;
-window.closeSession         = closeSession;
+window.closeSession          = closeSession;
