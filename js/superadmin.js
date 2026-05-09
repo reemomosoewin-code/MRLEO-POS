@@ -2,10 +2,8 @@
 //  superadmin.js — Master dashboard for multi-branch owners
 // ============================================================
 import * as C from './config.js';
-import { fmtK, sum, init, getT, parseItems, calcCommission, toast, todayStr } from './utils.js';
+import { fmtK, sum, init, getT, parseItems, calcCommission, toast, todayStr, getExpDate } from './utils.js';
 
-let getExpDate; // lazy import to avoid circular dep
-import('./utils.js').then(u => { getExpDate = u.getExpDate; });
 
 export async function checkSuperAdminStatus() {
   try {
